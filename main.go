@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/j-clemons/dbt-language-server/analysis"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/rpc"
 )
@@ -16,17 +17,19 @@ func main() {
     scanner := bufio.NewScanner(os.Stdin)
     scanner.Split(rpc.Split)
 
+    state := analysis.NewState()
+
     for scanner.Scan() {
         msg := scanner.Bytes()
         method, contents, err := rpc.DecodeMessage(msg)
         if err != nil {
             logger.Printf("Got an error: %s", err)
         }
-        handleMessage(logger, method, contents)
+        handleMessage(logger, state, method, contents)
     }
 }
 
-func handleMessage(logger *log.Logger, method string, contents []byte) {
+func handleMessage(logger *log.Logger, state analysis.State, method string, contents []byte) {
     logger.Printf("Received msg with method: %s", method)
 
     switch method {
@@ -47,6 +50,26 @@ func handleMessage(logger *log.Logger, method string, contents []byte) {
         writer.Write([]byte(reply))
 
         logger.Print("Sent the reply")
+    case "textDocument/didOpen":
+        var request lsp.DidOpenTextDocumentNotification
+        if err := json.Unmarshal(contents, &request); err != nil {
+            logger.Printf("textDocument/didOpen: %s", err)
+            return
+        }
+
+        logger.Printf("Opened: %s\n%s", request.Params.TextDocument.URI, request.Params.TextDocument.Text)
+        state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
+    case "textDocument/didChange":
+        var request lsp.TextDocumentDidChangeNotification
+        if err := json.Unmarshal(contents, &request); err != nil {
+            logger.Printf("textDocument/didChange: %s", err)
+            return
+        }
+
+        logger.Printf("Changed: %s", request.Params.TextDocument.URI)
+        for _, change := range request.Params.ContentChanges {
+            state.OpenDocument(request.Params.TextDocument.URI, change.Text)
+        }
     }
 }
 
