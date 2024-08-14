@@ -3,17 +3,18 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"io"
 	"log"
 	"os"
-    "io"
 
 	"github.com/j-clemons/dbt-language-server/analysis"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/rpc"
+	"github.com/j-clemons/dbt-language-server/util"
 )
 
 func main() {
-    logger := getLogger("/home/jclemons/Projects/dbt-lsp/log.txt")
+    logger := util.GetLogger("/home/jclemons/Projects/dbt-lsp/log.txt")
     logger.Println("dbt Language Server Started!")
     scanner := bufio.NewScanner(os.Stdin)
     scanner.Split(rpc.Split)
@@ -96,13 +97,4 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 func writeResponse(writer io.Writer, msg any) {
     reply := rpc.EncodeMessage(msg)
     writer.Write([]byte(reply))
-}
-
-func getLogger(filename string) *log.Logger {
-    logfile, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
-    if err != nil {
-        panic("Did not provide a good file")
-    }
-
-    return log.New(logfile, "[dbt-lsp]", log.Ldate|log.Ltime|log.Lshortfile)
 }
