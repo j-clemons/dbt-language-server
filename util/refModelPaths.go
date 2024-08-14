@@ -42,7 +42,7 @@ func findFileDir(fileName string, startPath string) (string, error) {
     }
 }
 
-func createModelPathMap() map[string]string {
+func CreateModelPathMap() map[string]string {
     wd, _ := os.Getwd()
     dir, _ := findFileDir("dbt_project.yml", wd)
 

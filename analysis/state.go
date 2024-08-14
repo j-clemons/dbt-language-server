@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
+	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type State struct {
@@ -38,25 +39,42 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
 }
 
 func (s *State) Definition(id int, uri string, position lsp.Position) lsp.DefinitionResponse {
-// In real life, this would look up the definition
-
-	return lsp.DefinitionResponse{
+    response := lsp.DefinitionResponse{
 		Response: lsp.Response{
 			RPC: "2.0",
 			ID:  &id,
 		},
 		Result: lsp.Location{
-			URI: uri,
-			Range: lsp.Range{
-				Start: lsp.Position{
-					Line:      position.Line - 1,
-					Character: 0,
-				},
-				End: lsp.Position{
-					Line:      position.Line - 1,
-					Character: 0,
-				},
-			},
-		},
+            URI: uri,
+            Range: lsp.Range{
+                Start: lsp.Position{
+                    Line:      position.Line,
+                    Character: position.Character,
+                },
+                End: lsp.Position{
+                    Line:      position.Line,
+                    Character: position.Character,
+                },
+            },
+        },
 	}
+
+    modelPathMap := util.CreateModelPathMap()
+    ref := util.GetRef(uri, position.Line, position.Character)
+
+    if modelPathMap[ref] != "" {
+        response.Result.URI = "file://" + modelPathMap[ref]
+        response.Result.Range = lsp.Range{
+                Start: lsp.Position{
+                    Line:      0,
+                    Character: 0,
+                },
+                End: lsp.Position{
+                    Line:      0,
+                    Character: 0,
+                },
+        }
+    }
+
+	return response
 }

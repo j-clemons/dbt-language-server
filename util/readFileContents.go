@@ -1,9 +1,9 @@
 package util
 
 import (
-    "os"
-    "strings"
-    "regexp"
+	"os"
+	"regexp"
+	"strings"
 )
 
 func ReadFileContents(filename string) string {
@@ -19,7 +19,7 @@ func splitContents(contents string) []string {
 }
 
 func getLine(contents []string, line int) string {
-    return contents[line - 1]
+    return contents[line]
 }
 
 func getString(s string, pos int) string {
@@ -45,8 +45,21 @@ func getQuotedString(s string) string {
         re := regexp.MustCompile(`"(.+)"|'(.+)'`)
         matches := re.FindStringSubmatch(s)
 
+        if len(matches) == 0 {
+            return ""
+        }
+
         return matches[len(matches) - 1]
 }
 
-// check if string contains ref(
-// if yes then extract the string in the parentheses and remove quotes
+func GetRef(uri string, line int, pos int) string {
+    cleanedUri := uri[7:]
+
+    contents := ReadFileContents(cleanedUri)
+    contentSlice := splitContents(contents)
+    lineStr := getLine(contentSlice, line)
+
+    return getQuotedString(getString(lineStr, pos))
+
+}
+
