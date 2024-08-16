@@ -47,9 +47,13 @@ func getQuotedString(s string) string {
 
         if len(matches) == 0 {
             return ""
+        } else if matches[1] != "" {
+            return matches[1]
+        } else if matches[2] != "" {
+            return matches[2]
         }
 
-        return matches[len(matches) - 1]
+        return ""
 }
 
 func GetRef(uri string, line int, pos int) string {
