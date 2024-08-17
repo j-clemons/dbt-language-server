@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-    logger := util.GetLogger("/home/jclemons/Projects/dbt-lsp/log.txt")
+    logger := util.GetLogger("log.txt")
     logger.Println("dbt Language Server Started!")
     scanner := bufio.NewScanner(os.Stdin)
     scanner.Split(rpc.Split)
