@@ -9,10 +9,20 @@ import (
 
 type State struct {
     Documents map[string]string
+    DbtContext DbtContext
+}
+
+type DbtContext struct {
+    ModelPathMap map[string]string
 }
 
 func NewState() State {
-    return State{Documents: map[string]string{}}
+    return State{
+        Documents: map[string]string{},
+        DbtContext: DbtContext{
+            ModelPathMap: util.CreateModelPathMap(),
+        },
+    }
 }
 
 func (s *State) OpenDocument(uri, text string) {
@@ -59,11 +69,10 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         },
 	}
 
-    modelPathMap := util.CreateModelPathMap()
     ref := util.GetRef(uri, position.Line, position.Character)
 
-    if modelPathMap[ref] != "" {
-        response.Result.URI = "file://" + modelPathMap[ref]
+    if s.DbtContext.ModelPathMap[ref] != "" {
+        response.Result.URI = "file://" + s.DbtContext.ModelPathMap[ref]
         response.Result.Range = lsp.Range{
                 Start: lsp.Position{
                     Line:      0,
