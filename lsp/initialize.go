@@ -27,8 +27,9 @@ type InitializeResult struct {
 type ServerCapabilities struct {
     TextDocumentSync   int  `json:"textDocumentSync"`
 
-    HoverProvider      bool `json:"hoverProvider"`
-    DefinitionProvider bool `json:"definitionProvider"`
+    HoverProvider      bool           `json:"hoverProvider"`
+    DefinitionProvider bool           `json:"definitionProvider"`
+    CompletionProvider map[string]any `json:"completionProvider"`
 }
 
 type ServerInfo struct {
@@ -47,6 +48,7 @@ func NewInitializeResponse(id int) InitializeResponse {
                 TextDocumentSync:   1,
                 HoverProvider:      true,
                 DefinitionProvider: true,
+                CompletionProvider: map[string]any{},
             },
             ServerInfo:   ServerInfo{
                 Name:    "dbt-language-server",

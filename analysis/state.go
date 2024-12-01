@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/util"
@@ -93,4 +94,31 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
     }
 
 	return response
+}
+
+func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position) lsp.CompletionResponse {
+    items := []lsp.CompletionItem{}
+
+    fileContents := s.Documents[uri]
+    lines := util.SplitContents(fileContents)
+    lineText := lines[position.Line]
+
+    cursorOffset := int(position.Character)
+    textBeforeCursor := lineText[:cursorOffset]
+
+    refRegex := regexp.MustCompile(`\bref\(('|")[a-zA-z]*$`)
+
+    if refRegex.MatchString(textBeforeCursor) {
+        items = GetRefCompletionItems(s.DbtContext.ModelPathMap)
+    }
+
+    response := lsp.CompletionResponse{
+        Response: lsp.Response{
+            RPC: "2.0",
+            ID:  &id,
+        },
+        Result: items,
+    }
+
+    return response
 }

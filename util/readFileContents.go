@@ -14,11 +14,11 @@ func ReadFileContents(filename string) string {
     return string(contents)
 }
 
-func splitContents(contents string) []string {
+func SplitContents(contents string) []string {
     return strings.Split(contents, "\n")
 }
 
-func getLine(contents []string, line int) string {
+func GetLine(contents []string, line int) string {
     return contents[line]
 }
 
@@ -60,8 +60,8 @@ func GetRef(uri string, line int, pos int) string {
     cleanedUri := uri[7:]
 
     contents := ReadFileContents(cleanedUri)
-    contentSlice := splitContents(contents)
-    lineStr := getLine(contentSlice, line)
+    contentSlice := SplitContents(contents)
+    lineStr := GetLine(contentSlice, line)
 
     return getQuotedString(getString(lineStr, pos))
 
