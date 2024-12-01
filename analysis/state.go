@@ -33,6 +33,13 @@ func (s *State) UpdateDocument(uri, text string) {
     s.Documents[uri] = text
 }
 
+func (s *State) SaveDocument(uri string) {
+    newModelPathMap := util.CreateModelPathMap()
+    for k, v := range newModelPathMap {
+        s.DbtContext.ModelPathMap[k] = v
+    }
+}
+
 func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverResponse {
     // this should look up the type in the type analysis code
     document := s.Documents[uri]

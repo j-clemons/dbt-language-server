@@ -57,8 +57,18 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
             return
         }
 
-        logger.Printf("Opened: %s\n%s", request.Params.TextDocument.URI, request.Params.TextDocument.Text)
         state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
+        logger.Printf("Opened: %s\n%s", request.Params.TextDocument.URI, request.Params.TextDocument.Text)
+    case "textDocument/didSave":
+        logger.Print("textDocument/didSave")
+        var request lsp.DidSaveTextDocumentNotification
+        if err := json.Unmarshal(contents, &request); err != nil {
+            logger.Printf("textDocument/didSave: %s", err)
+            return
+        }
+
+        logger.Printf("Saved: %s", request.Params.TextDocument.URI)
+        state.SaveDocument(request.Params.TextDocument.URI)
     case "textDocument/didChange":
         var request lsp.TextDocumentDidChangeNotification
         if err := json.Unmarshal(contents, &request); err != nil {
