@@ -98,7 +98,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
             return
         }
 
-        response := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position, logger)
+        response := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
         writeResponse(writer, response)
     case "textDocument/completion":

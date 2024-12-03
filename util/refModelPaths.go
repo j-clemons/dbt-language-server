@@ -44,11 +44,16 @@ func findFileDir(fileName string, startPath string) (string, error) {
 
 func CreateModelPathMap() map[string]string {
     wd, _ := os.Getwd()
-    dir, _ := findFileDir("dbt_project.yml", wd)
+    dir, err := findFileDir("dbt_project.yml", wd)
+    if err != nil {
+        log.Print(err)
+        return nil
+    }
 
     files, err := createSqlFileNameMap(dir+"/models/")
     if err != nil {
         log.Print(err)
+        return nil
     }
 
     return files
