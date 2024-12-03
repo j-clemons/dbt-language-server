@@ -109,7 +109,10 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     refRegex := regexp.MustCompile(`\bref\(('|")[a-zA-z]*$`)
 
     if refRegex.MatchString(textBeforeCursor) {
-        items = GetRefCompletionItems(s.DbtContext.ModelPathMap)
+        items = GetRefCompletionItems(
+            s.DbtContext.ModelPathMap,
+            GetReferenceSuffix(textBeforeCursor),
+        )
     }
 
     response := lsp.CompletionResponse{

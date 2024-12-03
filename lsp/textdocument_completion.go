@@ -15,9 +15,12 @@ type CompletionResponse struct {
 }
 
 type CompletionItem struct {
-    Label string `json:"label"`
+    Label      string `json:"label"`
+    Kind       int    `json:"kind"`
+    InsertText string `json:"insertText"`
+    SortText   string `json:"sortText"`
 }
 
 type CompletionOptions struct {
-    triggerCharacters []string `json:"triggerCharacters"`
+    TriggerCharacters []string `json:"triggerCharacters"`
 }
