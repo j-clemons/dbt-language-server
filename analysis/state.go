@@ -14,20 +14,28 @@ type State struct {
 }
 
 type DbtContext struct {
-    ModelPathMap map[string]string
+    ModelDetailMap map[string]ModelDetails
 }
 
 func NewState() State {
     return State{
         Documents: map[string]string{},
         DbtContext: DbtContext{
-            ModelPathMap: util.CreateModelPathMap(),
+            ModelDetailMap: map[string]ModelDetails{},
         },
+    }
+}
+
+func (s *State) refreshDbtContext() {
+    newModelDetailMap := GetModelDetails()
+    for k, v := range newModelDetailMap {
+        s.DbtContext.ModelDetailMap[k] = v
     }
 }
 
 func (s *State) OpenDocument(uri, text string) {
     s.Documents[uri] = text
+    s.refreshDbtContext()
 }
 
 func (s *State) UpdateDocument(uri, text string) {
@@ -35,10 +43,7 @@ func (s *State) UpdateDocument(uri, text string) {
 }
 
 func (s *State) SaveDocument(uri string) {
-    newModelPathMap := util.CreateModelPathMap()
-    for k, v := range newModelPathMap {
-        s.DbtContext.ModelPathMap[k] = v
-    }
+    s.refreshDbtContext()
 }
 
 func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverResponse {
@@ -79,8 +84,8 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 
     ref := util.GetRef(uri, position.Line, position.Character)
 
-    if s.DbtContext.ModelPathMap[ref] != "" {
-        response.Result.URI = "file://" + s.DbtContext.ModelPathMap[ref]
+    if s.DbtContext.ModelDetailMap[ref].URI != "" {
+        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[ref].URI
         response.Result.Range = lsp.Range{
                 Start: lsp.Position{
                     Line:      0,
@@ -110,7 +115,7 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
 
     if refRegex.MatchString(textBeforeCursor) {
         items = GetRefCompletionItems(
-            s.DbtContext.ModelPathMap,
+            s.DbtContext.ModelDetailMap,
             GetReferenceSuffix(textBeforeCursor),
         )
     }

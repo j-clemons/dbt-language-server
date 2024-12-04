@@ -15,10 +15,11 @@ type CompletionResponse struct {
 }
 
 type CompletionItem struct {
-    Label      string `json:"label"`
-    Kind       int    `json:"kind"`
-    InsertText string `json:"insertText"`
-    SortText   string `json:"sortText"`
+    Label         string `json:"label"`
+    Documentation string `json:"documentation"`
+    Kind          int    `json:"kind"`
+    InsertText    string `json:"insertText"`
+    SortText      string `json:"sortText"`
 }
 
 type CompletionOptions struct {

@@ -42,15 +42,21 @@ func findFileDir(fileName string, startPath string) (string, error) {
     }
 }
 
-func CreateModelPathMap() map[string]string {
+func GetProjectRoot(projFile string) string {
     wd, _ := os.Getwd()
-    dir, err := findFileDir("dbt_project.yml", wd)
+    dir, err := findFileDir(projFile, wd)
     if err != nil {
         log.Print(err)
-        return nil
+        return ""
     }
 
-    files, err := createSqlFileNameMap(dir+"/models/")
+    return dir
+}
+
+func CreateModelPathMap() map[string]string {
+    root := GetProjectRoot("dbt_project.yml")
+
+    files, err := createSqlFileNameMap(root+"/models/")
     if err != nil {
         log.Print(err)
         return nil

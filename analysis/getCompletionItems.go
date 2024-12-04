@@ -8,17 +8,18 @@ import (
 	"github.com/j-clemons/dbt-language-server/lsp"
 )
 
-func GetRefCompletionItems(pathMap map[string]string, suffix string) []lsp.CompletionItem {
-    items := make([]lsp.CompletionItem, 0, len(pathMap))
+func GetRefCompletionItems(modelMap map[string]ModelDetails, suffix string) []lsp.CompletionItem {
+    items := make([]lsp.CompletionItem, 0, len(modelMap))
 
-    for k := range pathMap {
+    for k := range modelMap {
         items = append(
             items,
             lsp.CompletionItem{
-                Label:      k,
-                Kind:       18,
-                InsertText: fmt.Sprintf("%s%s", k, suffix),
-                SortText:   k,
+                Label:         k,
+                Documentation: modelMap[k].Description,
+                Kind:          18,
+                InsertText:    fmt.Sprintf("%s%s", k, suffix),
+                SortText:      k,
             },
         )
     }
