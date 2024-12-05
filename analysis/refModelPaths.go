@@ -60,7 +60,7 @@ func GetProjectRoot(projFile string) string {
 }
 
 func CreateModelPathMap(projectRoot string, projYaml DbtProjectYaml) map[string]string {
-    files, err := createSqlFileNameMap(projectRoot, projYaml.SourcePaths)
+    files, err := createSqlFileNameMap(projectRoot, projYaml.ModelPaths)
     if err != nil {
         log.Print(err)
         return nil

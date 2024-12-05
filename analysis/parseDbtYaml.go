@@ -19,9 +19,9 @@ type Model struct {
 
 type DbtProjectYaml struct {
     ProjectName          string   `yaml:"name"`
-    SourcePaths          []string `yaml:"source-paths"`
+    ModelPaths           []string `yaml:"model-paths"`
     MacroPaths           []string `yaml:"macro-paths"`
-    PackagesInstallPaths string `yaml:"packages-install-path"`
+    PackagesInstallPaths string   `yaml:"packages-install-path"`
 }
 
 func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
@@ -77,7 +77,7 @@ func parseSchemaYamlFile(path string) SchemaYaml {
 func ParseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Model {
     modelMap := make(map[string]Model)
 
-    for _, path := range projYaml.SourcePaths {
+    for _, path := range projYaml.ModelPaths {
         files, _ := getYamlFiles(projectRoot+"/"+path+"/")
         for _, file := range files {
             dbtYml := parseSchemaYamlFile(file)
