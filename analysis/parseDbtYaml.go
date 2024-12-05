@@ -39,6 +39,16 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
 		fmt.Printf("Error decoding YAML: %v", err)
         return DbtProjectYaml{}
 	}
+
+    if projYaml.ModelPaths == nil || len(projYaml.ModelPaths) == 0 {
+        projYaml.ModelPaths = []string{"models"}
+    }
+    if projYaml.MacroPaths == nil || len(projYaml.MacroPaths) == 0 {
+        projYaml.MacroPaths = []string{"macros"}
+    }
+    if projYaml.PackagesInstallPaths == "" {
+        projYaml.PackagesInstallPaths = "dbt_packages"
+    }
     return projYaml
 }
 
