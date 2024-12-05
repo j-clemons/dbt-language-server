@@ -1,4 +1,4 @@
-package util
+package analysis
 
 import (
     "fmt"
@@ -7,16 +7,22 @@ import (
     "path/filepath"
 )
 
-func createSqlFileNameMap(path string) (map[string]string, error) {
+func createSqlFileNameMap(root string, paths []string) (map[string]string, error) {
     sqlFileMap := make(map[string]string)
-    err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-        if !info.IsDir() {
-            if filepath.Ext(path) == ".sql" {
-                sqlFileMap[info.Name()[:len(info.Name()) - 4]] = path
+
+    var err error
+
+    for _, p := range paths {
+        path := root + "/" + p
+        err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+            if !info.IsDir() {
+                if filepath.Ext(path) == ".sql" {
+                    sqlFileMap[info.Name()[:len(info.Name()) - 4]] = path
+                }
             }
-        }
-        return nil
-    })
+            return nil
+        })
+    }
 
     return sqlFileMap, err
 }
@@ -53,10 +59,8 @@ func GetProjectRoot(projFile string) string {
     return dir
 }
 
-func CreateModelPathMap() map[string]string {
-    root := GetProjectRoot("dbt_project.yml")
-
-    files, err := createSqlFileNameMap(root+"/models/")
+func CreateModelPathMap(projectRoot string, projYaml DbtProjectYaml) map[string]string {
+    files, err := createSqlFileNameMap(projectRoot, projYaml.SourcePaths)
     if err != nil {
         log.Print(err)
         return nil

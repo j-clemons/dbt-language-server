@@ -1,17 +1,16 @@
 package analysis
 
-import "github.com/j-clemons/dbt-language-server/util"
-
 type ModelDetails struct {
     URI         string
     Description string
 }
 
-func GetModelDetails() map[string]ModelDetails {
+func GetModelDetails(projectRoot string) map[string]ModelDetails {
     modelMap := make(map[string]ModelDetails)
 
-    modelPathMap := util.CreateModelPathMap()
-    schemaDetails := ParseYamlModels()
+    dbtProjectYaml := parseDbtProjectYaml(projectRoot)
+    modelPathMap := CreateModelPathMap(projectRoot, dbtProjectYaml)
+    schemaDetails := ParseYamlModels(projectRoot, dbtProjectYaml)
 
     for k, v := range modelPathMap {
         modelMap[k] = ModelDetails{

@@ -14,6 +14,7 @@ type State struct {
 }
 
 type DbtContext struct {
+    ProjectRoot    string
     ModelDetailMap map[string]ModelDetails
 }
 
@@ -21,13 +22,15 @@ func NewState() State {
     return State{
         Documents: map[string]string{},
         DbtContext: DbtContext{
+            ProjectRoot: GetProjectRoot("dbt_project.yml"),
             ModelDetailMap: map[string]ModelDetails{},
         },
     }
 }
 
 func (s *State) refreshDbtContext() {
-    newModelDetailMap := GetModelDetails()
+    s.DbtContext.ProjectRoot = GetProjectRoot("dbt_project.yml")
+    newModelDetailMap := GetModelDetails(s.DbtContext.ProjectRoot)
     for k, v := range newModelDetailMap {
         s.DbtContext.ModelDetailMap[k] = v
     }

@@ -5,17 +5,41 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/j-clemons/dbt-language-server/util"
 	"gopkg.in/yaml.v3"
 )
 
-type DbtYaml struct {
+type SchemaYaml struct {
     Models []Model `yaml:"models"`
 }
 
 type Model struct {
     Name        string `yaml:"name"`
     Description string `yaml:"description"`
+}
+
+type DbtProjectYaml struct {
+    ProjectName          string   `yaml:"name"`
+    SourcePaths          []string `yaml:"source-paths"`
+    MacroPaths           []string `yaml:"macro-paths"`
+    PackagesInstallPaths string `yaml:"packages-install-path"`
+}
+
+func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
+    file, err := os.Open(projectRoot+"/dbt_project.yml")
+	if err != nil {
+		fmt.Printf("Error opening file: %v", err)
+        return DbtProjectYaml{}
+
+	}
+	defer file.Close()
+
+	var projYaml DbtProjectYaml
+	decoder := yaml.NewDecoder(file)
+	if err := decoder.Decode(&projYaml); err != nil {
+		fmt.Printf("Error decoding YAML: %v", err)
+        return DbtProjectYaml{}
+	}
+    return projYaml
 }
 
 func getYamlFiles(path string) ([]string, error) {
@@ -32,32 +56,34 @@ func getYamlFiles(path string) ([]string, error) {
     return files, err
 }
 
-func parseYamlFile(path string) DbtYaml {
+func parseSchemaYamlFile(path string) SchemaYaml {
     file, err := os.Open(path)
 	if err != nil {
 		fmt.Printf("Error opening file: %v", err)
-        return DbtYaml{}
+        return SchemaYaml{}
 
 	}
 	defer file.Close()
 
-	var config DbtYaml
+	var config SchemaYaml
 	decoder := yaml.NewDecoder(file)
 	if err := decoder.Decode(&config); err != nil {
 		fmt.Printf("Error decoding YAML: %v", err)
-        return DbtYaml{}
+        return SchemaYaml{}
 	}
     return config
 }
 
-func ParseYamlModels() map[string]Model {
+func ParseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Model {
     modelMap := make(map[string]Model)
-    root := util.GetProjectRoot("dbt_project.yml")
-    files, _ := getYamlFiles(root+"/models/")
-    for _, file := range files {
-        dbtYml := parseYamlFile(file)
-        for _, model := range dbtYml.Models {
-            modelMap[model.Name] = model
+
+    for _, path := range projYaml.SourcePaths {
+        files, _ := getYamlFiles(projectRoot+"/"+path+"/")
+        for _, file := range files {
+            dbtYml := parseSchemaYamlFile(file)
+            for _, model := range dbtYml.Models {
+                modelMap[model.Name] = model
+            }
         }
     }
     return modelMap
