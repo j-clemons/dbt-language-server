@@ -2,20 +2,41 @@ package analysis
 
 type ModelDetails struct {
     URI         string
+    ProjectName string
     Description string
+}
+
+type ProjectDetails struct {
+    RootPath       string
+    DbtProjectYaml DbtProjectYaml
 }
 
 func GetModelDetails(projectRoot string) map[string]ModelDetails {
     modelMap := make(map[string]ModelDetails)
 
     dbtProjectYaml := parseDbtProjectYaml(projectRoot)
-    modelPathMap := CreateModelPathMap(projectRoot, dbtProjectYaml)
-    schemaDetails := ParseYamlModels(projectRoot, dbtProjectYaml)
+    packageDetails := getPackageModelDetails(projectRoot, dbtProjectYaml)
 
-    for k, v := range modelPathMap {
-        modelMap[k] = ModelDetails{
-            URI:         v,
-            Description: schemaDetails[k].Description,
+    processList := []ProjectDetails{}
+    processList = append(
+        processList,
+        ProjectDetails{
+            RootPath: projectRoot,
+            DbtProjectYaml: dbtProjectYaml,
+        },
+    )
+    processList = append(processList, packageDetails...)
+
+    for _, p := range processList {
+        modelPathMap := CreateModelPathMap(p.RootPath, p.DbtProjectYaml)
+        schemaDetails := ParseYamlModels(p.RootPath, p.DbtProjectYaml)
+
+        for k, v := range modelPathMap {
+            modelMap[k] = ModelDetails{
+                URI:         v,
+                ProjectName: p.DbtProjectYaml.ProjectName,
+                Description: schemaDetails[k].Description,
+            }
         }
     }
     return modelMap

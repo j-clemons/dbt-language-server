@@ -21,7 +21,7 @@ type DbtProjectYaml struct {
     ProjectName          string   `yaml:"name"`
     ModelPaths           []string `yaml:"model-paths"`
     MacroPaths           []string `yaml:"macro-paths"`
-    PackagesInstallPaths string   `yaml:"packages-install-path"`
+    PackagesInstallPath  string   `yaml:"packages-install-path"`
 }
 
 func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
@@ -46,8 +46,8 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     if projYaml.MacroPaths == nil || len(projYaml.MacroPaths) == 0 {
         projYaml.MacroPaths = []string{"macros"}
     }
-    if projYaml.PackagesInstallPaths == "" {
-        projYaml.PackagesInstallPaths = "dbt_packages"
+    if projYaml.PackagesInstallPath == "" {
+        projYaml.PackagesInstallPath = "dbt_packages"
     }
     return projYaml
 }
@@ -88,6 +88,10 @@ func ParseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
     modelMap := make(map[string]Model)
 
     for _, path := range projYaml.ModelPaths {
+        _, err := os.ReadDir(projectRoot+"/"+path)
+        if err != nil {
+            continue
+        }
         files, _ := getYamlFiles(projectRoot+"/"+path+"/")
         for _, file := range files {
             dbtYml := parseSchemaYamlFile(file)
@@ -96,5 +100,6 @@ func ParseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
             }
         }
     }
+
     return modelMap
 }

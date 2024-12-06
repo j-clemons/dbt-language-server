@@ -14,6 +14,10 @@ func createSqlFileNameMap(root string, paths []string) (map[string]string, error
 
     for _, p := range paths {
         path := root + "/" + p
+        _, err = os.ReadDir(path)
+        if err != nil {
+            continue
+        }
         err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
             if !info.IsDir() {
                 if filepath.Ext(path) == ".sql" {
@@ -68,4 +72,3 @@ func CreateModelPathMap(projectRoot string, projYaml DbtProjectYaml) map[string]
 
     return files
 }
-
