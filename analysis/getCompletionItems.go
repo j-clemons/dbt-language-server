@@ -16,6 +16,7 @@ func GetRefCompletionItems(modelMap map[string]ModelDetails, suffix string) []ls
             items,
             lsp.CompletionItem{
                 Label:         k,
+                Detail:        fmt.Sprintf("Project: %s", modelMap[k].ProjectName),
                 Documentation: modelMap[k].Description,
                 Kind:          18,
                 InsertText:    fmt.Sprintf("%s%s", k, suffix),

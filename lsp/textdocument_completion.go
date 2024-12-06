@@ -16,6 +16,7 @@ type CompletionResponse struct {
 
 type CompletionItem struct {
     Label         string `json:"label"`
+    Detail        string `json:"detail"`
     Documentation string `json:"documentation"`
     Kind          int    `json:"kind"`
     InsertText    string `json:"insertText"`
