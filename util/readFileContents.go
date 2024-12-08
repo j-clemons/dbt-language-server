@@ -2,8 +2,8 @@ package util
 
 import (
 	"os"
-	"regexp"
 	"strings"
+	"unicode"
 )
 
 func ReadFileContents(filename string) string {
@@ -14,56 +14,38 @@ func ReadFileContents(filename string) string {
     return string(contents)
 }
 
-func SplitContents(contents string) []string {
-    return strings.Split(contents, "\n")
-}
+func getStringUnderCursor(text string, line int, column int) string {
+    lines := strings.Split(text, "\n")
 
-func GetLine(contents []string, line int) string {
-    return contents[line]
-}
-
-func getString(s string, pos int) string {
-    re := regexp.MustCompile(`\S+`)
-    strRng := re.FindAllIndex([]byte(s), -1)
-
-    if len(strRng) == 0 {
+    if line < 0 || line > len(lines) {
         return ""
-    } else if len(strRng) == 1 {
-        return s[strRng[0][0]:strRng[0][1]]
+    }
+    currentLine := lines[line]
+
+    if column < 0 || column > len(currentLine) {
+        return ""
     }
 
-    for _, r := range strRng {
-        if pos >= r[0] && pos < r[1] {
-            return s[r[0]:r[1]]
-        }
+    isWordChar := func(r rune) bool {
+        return unicode.IsLetter(r) || unicode.IsNumber(r) || r == '_'
     }
 
-    return ""
+    start := column
+    for start > 0 && isWordChar(rune(currentLine[start-1])) {
+        start--
+    }
+
+    end := column
+    for end < len(currentLine) && isWordChar(rune(currentLine[end])) {
+        end++
+    }
+
+    return currentLine[start:end]
 }
 
-func getQuotedString(s string) string {
-        re := regexp.MustCompile(`"(.+)"|'(.+)'`)
-        matches := re.FindStringSubmatch(s)
-
-        if len(matches) == 0 {
-            return ""
-        } else if matches[1] != "" {
-            return matches[1]
-        } else if matches[2] != "" {
-            return matches[2]
-        }
-
-        return ""
-}
-
-func GetRef(uri string, line int, pos int) string {
+func StringUnderCursor(uri string, line int, pos int) string {
     cleanedUri := uri[7:]
-
     contents := ReadFileContents(cleanedUri)
-    contentSlice := SplitContents(contents)
-    lineStr := GetLine(contentSlice, line)
 
-    return getQuotedString(getString(lineStr, pos))
-
+    return getStringUnderCursor(contents, line, pos)
 }
-

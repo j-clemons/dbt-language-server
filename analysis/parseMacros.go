@@ -18,7 +18,7 @@ type Macro struct {
 }
 
 func getLineAndColumn(input string, idx int) (line, column int) {
-    line = 1
+    line = 0
     lastLineIdx := 0
 
     for i := 0; i < idx && i < len(input); i++ {
@@ -28,7 +28,7 @@ func getLineAndColumn(input string, idx int) (line, column int) {
         }
     }
 
-    column = idx - lastLineIdx + 1
+    column = idx - lastLineIdx
     return line, column
 }
 

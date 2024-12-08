@@ -3,6 +3,7 @@ package analysis
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/util"
@@ -96,10 +97,10 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         },
 	}
 
-    ref := util.GetRef(uri, position.Line, position.Character)
+    cursorStr := util.StringUnderCursor(uri, position.Line, position.Character)
 
-    if s.DbtContext.ModelDetailMap[ref].URI != "" {
-        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[ref].URI
+    if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
+        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorStr].URI
         response.Result.Range = lsp.Range{
                 Start: lsp.Position{
                     Line:      0,
@@ -110,6 +111,9 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
                     Character: 0,
                 },
         }
+    } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
+        response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorStr].URI
+        response.Result.Range = s.DbtContext.MacroDetailMap[cursorStr].Range
     }
 
 	return response
@@ -119,7 +123,7 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     items := []lsp.CompletionItem{}
 
     fileContents := s.Documents[uri]
-    lines := util.SplitContents(fileContents)
+    lines := strings.Split(fileContents, "\n")
     lineText := lines[position.Line]
 
     cursorOffset := int(position.Character)
