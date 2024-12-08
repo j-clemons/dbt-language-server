@@ -1,7 +1,6 @@
 package analysis
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -62,18 +61,24 @@ func (s *State) SaveDocument(uri string) {
 }
 
 func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverResponse {
-    // this should look up the type in the type analysis code
-    document := s.Documents[uri]
-
-    return lsp.HoverResponse{
+    response := lsp.HoverResponse{
         Response: lsp.Response{
             RPC: "2.0",
             ID:  &id,
         },
         Result: lsp.HoverResult{
-            Contents: fmt.Sprintf("File: %s, Characters: %d", uri, len(document)),
+            Contents: "",
         },
     }
+
+    cursorStr := util.StringUnderCursor(uri, position.Line, position.Character)
+
+    if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
+        response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
+    } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
+        response.Result.Contents = s.DbtContext.MacroDetailMap[cursorStr].Description
+    }
+    return response
 }
 
 func (s *State) Definition(id int, uri string, position lsp.Position) lsp.DefinitionResponse {
