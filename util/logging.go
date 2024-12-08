@@ -8,7 +8,7 @@ import (
 
 func GetLogger(filename string) *log.Logger {
     exePath := executableDirectory()
-    logfile, err := os.OpenFile(filepath.Join(exePath, filename), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+    logfile, err := os.OpenFile(filepath.Join(exePath, filename), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
     if err != nil {
         panic("Did not provide a good file")
     }

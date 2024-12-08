@@ -16,7 +16,7 @@ func getPackageRootPaths(projectRoot string, projYaml DbtProjectYaml) []string {
 }
 
 func getPackageDbtProjectYaml(packagePath string) DbtProjectYaml {
-    dbtYml := parseDbtProjectYaml(packagePath)
+    dbtYml := ParseDbtProjectYaml(packagePath)
     return dbtYml
 }
 
@@ -39,4 +39,25 @@ func getPackageModelDetails(projectRoot string, projYaml DbtProjectYaml) []Proje
         packageModelPaths = append(packageModelPaths, getPackageModelPaths(p))
     }
     return packageModelPaths
+}
+
+func getPackageMacroPaths(packagePath string) ProjectDetails {
+    validMacroPaths := []string{}
+    dbtYml := getPackageDbtProjectYaml(packagePath)
+    for _, path := range dbtYml.MacroPaths {
+        _, err := os.ReadDir(packagePath + "/" + path)
+        if err == nil {
+            validMacroPaths = append(validMacroPaths, path)
+        }
+    }
+    return ProjectDetails{RootPath: packagePath, DbtProjectYaml: dbtYml}
+}
+
+func getPackageMacroDetails(projectRoot string, projYaml DbtProjectYaml) []ProjectDetails {
+    packagePaths := getPackageRootPaths(projectRoot, projYaml)
+    packageMacroPaths := []ProjectDetails{}
+    for _, p := range packagePaths {
+        packageMacroPaths = append(packageMacroPaths, getPackageMacroPaths(p))
+    }
+    return packageMacroPaths
 }

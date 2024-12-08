@@ -56,3 +56,29 @@ func GetReferenceSuffix(ref string) string {
     return suffix
 }
 
+func GetMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYaml) []lsp.CompletionItem {
+    items := make([]lsp.CompletionItem, 0, len(macroMap))
+
+    for k := range macroMap {
+        var insertText string
+        if ProjectYaml.ProjectName == macroMap[k].ProjectName {
+            insertText = k
+        } else {
+            insertText = fmt.Sprintf("%s.%s", macroMap[k].ProjectName, k)
+        }
+
+        items = append(
+            items,
+            lsp.CompletionItem{
+                Label:         k,
+                Detail:        fmt.Sprintf("Project: %s", macroMap[k].ProjectName),
+                Documentation: macroMap[k].Description,
+                Kind:          15,
+                InsertText:    insertText,
+                SortText:      k,
+            },
+        )
+    }
+
+    return items
+}

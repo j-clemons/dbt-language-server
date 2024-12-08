@@ -15,7 +15,9 @@ type State struct {
 
 type DbtContext struct {
     ProjectRoot    string
+    ProjectYaml    DbtProjectYaml
     ModelDetailMap map[string]ModelDetails
+    MacroDetailMap map[string]Macro
 }
 
 func NewState() State {
@@ -23,16 +25,25 @@ func NewState() State {
         Documents: map[string]string{},
         DbtContext: DbtContext{
             ProjectRoot: GetProjectRoot("dbt_project.yml"),
+            ProjectYaml: ParseDbtProjectYaml(GetProjectRoot("dbt_project.yml")),
             ModelDetailMap: map[string]ModelDetails{},
+            MacroDetailMap: map[string]Macro{},
         },
     }
 }
 
 func (s *State) refreshDbtContext() {
     s.DbtContext.ProjectRoot = GetProjectRoot("dbt_project.yml")
+
+    s.DbtContext.ProjectYaml = ParseDbtProjectYaml(s.DbtContext.ProjectRoot)
     newModelDetailMap := GetModelDetails(s.DbtContext.ProjectRoot)
     for k, v := range newModelDetailMap {
         s.DbtContext.ModelDetailMap[k] = v
+    }
+
+    newMacroDetailMap := GetMacroDetails(s.DbtContext.ProjectRoot)
+    for k, v := range newMacroDetailMap {
+        s.DbtContext.MacroDetailMap[k] = v
     }
 }
 
@@ -115,12 +126,15 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     textBeforeCursor := lineText[:cursorOffset]
 
     refRegex := regexp.MustCompile(`\bref\(('|")[a-zA-z]*$`)
+    jinjaBlockRegex := regexp.MustCompile(`\{\{\s*`)
 
     if refRegex.MatchString(textBeforeCursor) {
         items = GetRefCompletionItems(
             s.DbtContext.ModelDetailMap,
             GetReferenceSuffix(textBeforeCursor),
         )
+    } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
+        items = GetMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)
     }
 
     response := lsp.CompletionResponse{

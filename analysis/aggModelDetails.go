@@ -14,7 +14,7 @@ type ProjectDetails struct {
 func GetModelDetails(projectRoot string) map[string]ModelDetails {
     modelMap := make(map[string]ModelDetails)
 
-    dbtProjectYaml := parseDbtProjectYaml(projectRoot)
+    dbtProjectYaml := ParseDbtProjectYaml(projectRoot)
     packageDetails := getPackageModelDetails(projectRoot, dbtProjectYaml)
 
     processList := []ProjectDetails{}

@@ -24,7 +24,7 @@ type DbtProjectYaml struct {
     PackagesInstallPath  string   `yaml:"packages-install-path"`
 }
 
-func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
+func ParseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     file, err := os.Open(projectRoot+"/dbt_project.yml")
 	if err != nil {
 		fmt.Printf("Error opening file: %v", err)
