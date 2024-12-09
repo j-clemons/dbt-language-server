@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -18,16 +19,18 @@ type DbtContext struct {
     ProjectYaml    DbtProjectYaml
     ModelDetailMap map[string]ModelDetails
     MacroDetailMap map[string]Macro
+    VariableMap    map[string]interface{}
 }
 
 func NewState() State {
     return State{
         Documents: map[string]string{},
         DbtContext: DbtContext{
-            ProjectRoot: GetProjectRoot("dbt_project.yml"),
-            ProjectYaml: ParseDbtProjectYaml(GetProjectRoot("dbt_project.yml")),
+            ProjectRoot:    GetProjectRoot("dbt_project.yml"),
+            ProjectYaml:    ParseDbtProjectYaml(GetProjectRoot("dbt_project.yml")),
             ModelDetailMap: map[string]ModelDetails{},
             MacroDetailMap: map[string]Macro{},
+            VariableMap:    map[string]interface{}{},
         },
     }
 }
@@ -36,7 +39,6 @@ func (s *State) refreshDbtContext() {
     s.DbtContext.ProjectRoot = GetProjectRoot("dbt_project.yml")
 
     s.DbtContext.ProjectYaml = ParseDbtProjectYaml(s.DbtContext.ProjectRoot)
-    getProjectVariables(s.DbtContext.ProjectYaml)
     newModelDetailMap := GetModelDetails(s.DbtContext.ProjectRoot)
     for k, v := range newModelDetailMap {
         s.DbtContext.ModelDetailMap[k] = v
@@ -45,6 +47,11 @@ func (s *State) refreshDbtContext() {
     newMacroDetailMap := GetMacroDetails(s.DbtContext.ProjectRoot)
     for k, v := range newMacroDetailMap {
         s.DbtContext.MacroDetailMap[k] = v
+    }
+
+    newVariableMap := getProjectVariables(s.DbtContext.ProjectYaml)
+    for k, v := range newVariableMap {
+        s.DbtContext.VariableMap[k] = v
     }
 }
 
@@ -78,6 +85,12 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
         response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
     } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
         response.Result.Contents = s.DbtContext.MacroDetailMap[cursorStr].Description
+    } else if s.DbtContext.VariableMap[cursorStr] != nil {
+        response.Result.Contents = fmt.Sprintf(
+            "%v: %v",
+            cursorStr,
+            s.DbtContext.VariableMap[cursorStr],
+        )
     }
     return response
 }
@@ -146,7 +159,7 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
         )
     } else if varRegex.MatchString(textBeforeCursor) {
         items = GetVariableCompletionItems(
-            getProjectVariables(s.DbtContext.ProjectYaml),
+            s.DbtContext.VariableMap,
             getVariableSuffix(textBeforeCursor),
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
