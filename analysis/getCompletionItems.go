@@ -49,7 +49,7 @@ func GetReferenceSuffix(ref string) string {
     if leadingAndTrailingSymbols.MatchString(ref) {
         return ""
     }
-    leadingSymbols := regexp.MustCompile(`{{\s+ref\(('|")`)
+    leadingSymbols := regexp.MustCompile(`{{\s*ref\(('|")`)
     prefix := leadingSymbols.FindString(ref)
     suffix := reverseRefPrefix(strings.Replace(prefix, "ref", "", 1))
 
@@ -75,6 +75,38 @@ func GetMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYa
                 Documentation: macroMap[k].Description,
                 Kind:          15,
                 InsertText:    insertText,
+                SortText:      k,
+            },
+        )
+    }
+
+    return items
+}
+
+func getVariableSuffix(vars string) string {
+    leadingAndTrailingSymbols := regexp.MustCompile(`{{\s*var\(('|")[a-zA-z]*('|")\)\s*}}`)
+    if leadingAndTrailingSymbols.MatchString(vars) {
+        return ""
+    }
+    leadingSymbols := regexp.MustCompile(`{{\s*var\(('|")`)
+    prefix := leadingSymbols.FindString(vars)
+    suffix := reverseRefPrefix(strings.Replace(prefix, "var", "", 1))
+
+    return suffix
+}
+
+func GetVariableCompletionItems(variables map[string]interface{}, suffix string) []lsp.CompletionItem {
+    items := make([]lsp.CompletionItem, 0, len(variables))
+
+    for k, v := range variables {
+        items = append(
+            items,
+            lsp.CompletionItem{
+                Label:         k,
+                Detail:        k,
+                Documentation: fmt.Sprintf("%v", v),
+                Kind:          6,
+                InsertText:    fmt.Sprintf("%s%s", k, suffix),
                 SortText:      k,
             },
         )

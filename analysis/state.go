@@ -36,6 +36,7 @@ func (s *State) refreshDbtContext() {
     s.DbtContext.ProjectRoot = GetProjectRoot("dbt_project.yml")
 
     s.DbtContext.ProjectYaml = ParseDbtProjectYaml(s.DbtContext.ProjectRoot)
+    getProjectVariables(s.DbtContext.ProjectYaml)
     newModelDetailMap := GetModelDetails(s.DbtContext.ProjectRoot)
     for k, v := range newModelDetailMap {
         s.DbtContext.ModelDetailMap[k] = v
@@ -135,12 +136,18 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     textBeforeCursor := lineText[:cursorOffset]
 
     refRegex := regexp.MustCompile(`\bref\(('|")[a-zA-z]*$`)
+    varRegex := regexp.MustCompile(`\bvar\(('|")[a-zA-z]*$`)
     jinjaBlockRegex := regexp.MustCompile(`\{\{\s*`)
 
     if refRegex.MatchString(textBeforeCursor) {
         items = GetRefCompletionItems(
             s.DbtContext.ModelDetailMap,
             GetReferenceSuffix(textBeforeCursor),
+        )
+    } else if varRegex.MatchString(textBeforeCursor) {
+        items = GetVariableCompletionItems(
+            getProjectVariables(s.DbtContext.ProjectYaml),
+            getVariableSuffix(textBeforeCursor),
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
         items = GetMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)

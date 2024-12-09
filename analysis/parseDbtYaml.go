@@ -18,10 +18,11 @@ type Model struct {
 }
 
 type DbtProjectYaml struct {
-    ProjectName          string   `yaml:"name"`
-    ModelPaths           []string `yaml:"model-paths"`
-    MacroPaths           []string `yaml:"macro-paths"`
-    PackagesInstallPath  string   `yaml:"packages-install-path"`
+    ProjectName         string                 `yaml:"name"`
+    ModelPaths          []string               `yaml:"model-paths"`
+    MacroPaths          []string               `yaml:"macro-paths"`
+    PackagesInstallPath string                 `yaml:"packages-install-path"`
+    Vars                map[string]interface{} `yaml:"vars"`
 }
 
 func ParseDbtProjectYaml(projectRoot string) DbtProjectYaml {
