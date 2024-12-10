@@ -2,14 +2,26 @@ package analysis
 
 func getProjectVariables(dbtProjectYaml DbtProjectYaml) map[string]interface{} {
     vars := make(map[string]interface{})
-    for key := range dbtProjectYaml.Vars {
-        if key != dbtProjectYaml.ProjectName {
-           vars[key] = dbtProjectYaml.Vars[key]
+
+    if dbtProjectYaml.Vars == nil {
+        return vars
+    }
+
+    for k, v := range dbtProjectYaml.Vars {
+        if k != dbtProjectYaml.ProjectName {
+           vars[k] = v
         }
     }
 
-    for key := range dbtProjectYaml.Vars[dbtProjectYaml.ProjectName].(map[string]interface{}) {
-        vars[key] = dbtProjectYaml.Vars[dbtProjectYaml.ProjectName].(map[string]interface{})[key]
+    projectVars, ok := dbtProjectYaml.Vars[dbtProjectYaml.ProjectName].(map[string]interface{})
+    if !ok {
+        return vars
+    }
+
+    for k, v := range projectVars {
+        if v != nil {
+            vars[k] = v
+        }
     }
 
     return vars
