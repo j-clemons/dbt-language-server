@@ -147,6 +147,7 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
 
     cursorOffset := int(position.Character)
     textBeforeCursor := lineText[:cursorOffset]
+    textAfterCursor := lineText[cursorOffset:]
 
     refRegex := regexp.MustCompile(`\bref\(('|")[a-zA-z]*$`)
     varRegex := regexp.MustCompile(`\bvar\(('|")[a-zA-z]*$`)
@@ -155,12 +156,12 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     if refRegex.MatchString(textBeforeCursor) {
         items = getRefCompletionItems(
             s.DbtContext.ModelDetailMap,
-            getReferenceSuffix(textBeforeCursor),
+            getReferenceSuffix(lineText, textAfterCursor),
         )
     } else if varRegex.MatchString(textBeforeCursor) {
         items = getVariableCompletionItems(
             s.DbtContext.VariableMap,
-            getVariableSuffix(textBeforeCursor),
+            getVariableSuffix(textBeforeCursor, textAfterCursor),
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
         items = getMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)

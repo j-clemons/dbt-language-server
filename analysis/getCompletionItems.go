@@ -44,9 +44,8 @@ func reverseRefPrefix(str string) string {
     return result
 }
 
-func getReferenceSuffix(ref string) string {
-    leadingAndTrailingSymbols := regexp.MustCompile(`{{\s*ref\(('|")[a-zA-z]*('|")\)\s*}}`)
-    if leadingAndTrailingSymbols.MatchString(ref) {
+func getReferenceSuffix(ref string, trailingStr string) string {
+    if trailingStr != "" {
         return ""
     }
     leadingSymbols := regexp.MustCompile(`{{\s*ref\(('|")`)
@@ -83,9 +82,8 @@ func getMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYa
     return items
 }
 
-func getVariableSuffix(vars string) string {
-    leadingAndTrailingSymbols := regexp.MustCompile(`{{\s*var\(('|")[a-zA-z]*('|")\)\s*}}`)
-    if leadingAndTrailingSymbols.MatchString(vars) {
+func getVariableSuffix(vars string, trailingStr string) string {
+    if trailingStr != "" {
         return ""
     }
     leadingSymbols := regexp.MustCompile(`{{\s*var\(('|")`)
