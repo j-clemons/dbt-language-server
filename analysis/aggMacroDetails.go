@@ -1,9 +1,9 @@
 package analysis
 
-func GetMacroDetails(projectRoot string) map[string]Macro {
+func getMacroDetails(projectRoot string) map[string]Macro {
     macroMap := make(map[string]Macro)
 
-    dbtProjectYaml := ParseDbtProjectYaml(projectRoot)
+    dbtProjectYaml := parseDbtProjectYaml(projectRoot)
     packageDetails := getPackageMacroDetails(projectRoot, dbtProjectYaml)
 
     processList := []ProjectDetails{}

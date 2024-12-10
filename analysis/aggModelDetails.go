@@ -11,10 +11,10 @@ type ProjectDetails struct {
     DbtProjectYaml DbtProjectYaml
 }
 
-func GetModelDetails(projectRoot string) map[string]ModelDetails {
+func getModelDetails(projectRoot string) map[string]ModelDetails {
     modelMap := make(map[string]ModelDetails)
 
-    dbtProjectYaml := ParseDbtProjectYaml(projectRoot)
+    dbtProjectYaml := parseDbtProjectYaml(projectRoot)
     packageDetails := getPackageModelDetails(projectRoot, dbtProjectYaml)
 
     processList := []ProjectDetails{}
@@ -28,8 +28,8 @@ func GetModelDetails(projectRoot string) map[string]ModelDetails {
     processList = append(processList, packageDetails...)
 
     for _, p := range processList {
-        modelPathMap := CreateModelPathMap(p.RootPath, p.DbtProjectYaml)
-        schemaDetails := ParseYamlModels(p.RootPath, p.DbtProjectYaml)
+        modelPathMap := createModelPathMap(p.RootPath, p.DbtProjectYaml)
+        schemaDetails := parseYamlModels(p.RootPath, p.DbtProjectYaml)
 
         for k, v := range modelPathMap {
             modelMap[k] = ModelDetails{

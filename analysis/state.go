@@ -26,8 +26,8 @@ func NewState() State {
     return State{
         Documents: map[string]string{},
         DbtContext: DbtContext{
-            ProjectRoot:    GetProjectRoot("dbt_project.yml"),
-            ProjectYaml:    ParseDbtProjectYaml(GetProjectRoot("dbt_project.yml")),
+            ProjectRoot:    util.GetProjectRoot("dbt_project.yml"),
+            ProjectYaml:    parseDbtProjectYaml(util.GetProjectRoot("dbt_project.yml")),
             ModelDetailMap: map[string]ModelDetails{},
             MacroDetailMap: map[string]Macro{},
             VariableMap:    map[string]interface{}{},
@@ -36,15 +36,15 @@ func NewState() State {
 }
 
 func (s *State) refreshDbtContext() {
-    s.DbtContext.ProjectRoot = GetProjectRoot("dbt_project.yml")
+    s.DbtContext.ProjectRoot = util.GetProjectRoot("dbt_project.yml")
 
-    s.DbtContext.ProjectYaml = ParseDbtProjectYaml(s.DbtContext.ProjectRoot)
-    newModelDetailMap := GetModelDetails(s.DbtContext.ProjectRoot)
+    s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
+    newModelDetailMap := getModelDetails(s.DbtContext.ProjectRoot)
     for k, v := range newModelDetailMap {
         s.DbtContext.ModelDetailMap[k] = v
     }
 
-    newMacroDetailMap := GetMacroDetails(s.DbtContext.ProjectRoot)
+    newMacroDetailMap := getMacroDetails(s.DbtContext.ProjectRoot)
     for k, v := range newMacroDetailMap {
         s.DbtContext.MacroDetailMap[k] = v
     }
@@ -153,17 +153,17 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     jinjaBlockRegex := regexp.MustCompile(`\{\{\s*`)
 
     if refRegex.MatchString(textBeforeCursor) {
-        items = GetRefCompletionItems(
+        items = getRefCompletionItems(
             s.DbtContext.ModelDetailMap,
-            GetReferenceSuffix(textBeforeCursor),
+            getReferenceSuffix(textBeforeCursor),
         )
     } else if varRegex.MatchString(textBeforeCursor) {
-        items = GetVariableCompletionItems(
+        items = getVariableCompletionItems(
             s.DbtContext.VariableMap,
             getVariableSuffix(textBeforeCursor),
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
-        items = GetMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)
+        items = getMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)
     }
 
     response := lsp.CompletionResponse{

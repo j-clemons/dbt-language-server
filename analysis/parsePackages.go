@@ -16,7 +16,7 @@ func getPackageRootPaths(projectRoot string, projYaml DbtProjectYaml) []string {
 }
 
 func getPackageDbtProjectYaml(packagePath string) DbtProjectYaml {
-    dbtYml := ParseDbtProjectYaml(packagePath)
+    dbtYml := parseDbtProjectYaml(packagePath)
     return dbtYml
 }
 

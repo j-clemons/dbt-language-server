@@ -8,7 +8,7 @@ import (
 	"github.com/j-clemons/dbt-language-server/lsp"
 )
 
-func GetRefCompletionItems(modelMap map[string]ModelDetails, suffix string) []lsp.CompletionItem {
+func getRefCompletionItems(modelMap map[string]ModelDetails, suffix string) []lsp.CompletionItem {
     items := make([]lsp.CompletionItem, 0, len(modelMap))
 
     for k := range modelMap {
@@ -44,7 +44,7 @@ func reverseRefPrefix(str string) string {
     return result
 }
 
-func GetReferenceSuffix(ref string) string {
+func getReferenceSuffix(ref string) string {
     leadingAndTrailingSymbols := regexp.MustCompile(`{{\s*ref\(('|")[a-zA-z]*('|")\)\s*}}`)
     if leadingAndTrailingSymbols.MatchString(ref) {
         return ""
@@ -56,7 +56,7 @@ func GetReferenceSuffix(ref string) string {
     return suffix
 }
 
-func GetMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYaml) []lsp.CompletionItem {
+func getMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYaml) []lsp.CompletionItem {
     items := make([]lsp.CompletionItem, 0, len(macroMap))
 
     for k := range macroMap {
@@ -95,7 +95,7 @@ func getVariableSuffix(vars string) string {
     return suffix
 }
 
-func GetVariableCompletionItems(variables map[string]interface{}, suffix string) []lsp.CompletionItem {
+func getVariableCompletionItems(variables map[string]interface{}, suffix string) []lsp.CompletionItem {
     items := make([]lsp.CompletionItem, 0, len(variables))
 
     for k, v := range variables {

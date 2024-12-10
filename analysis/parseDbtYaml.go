@@ -25,7 +25,7 @@ type DbtProjectYaml struct {
     Vars                map[string]interface{} `yaml:"vars"`
 }
 
-func ParseDbtProjectYaml(projectRoot string) DbtProjectYaml {
+func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     file, err := os.Open(projectRoot+"/dbt_project.yml")
 	if err != nil {
 		fmt.Printf("Error opening file: %v", err)
@@ -85,7 +85,7 @@ func parseSchemaYamlFile(path string) SchemaYaml {
     return config
 }
 
-func ParseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Model {
+func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Model {
     modelMap := make(map[string]Model)
 
     for _, path := range projYaml.ModelPaths {
