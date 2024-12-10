@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
+	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type Macro struct {
@@ -15,21 +16,6 @@ type Macro struct {
     Description string
     URI         string
     Range       lsp.Range
-}
-
-func getLineAndColumn(input string, idx int) (line, column int) {
-    line = 0
-    lastLineIdx := 0
-
-    for i := 0; i < idx && i < len(input); i++ {
-        if input[i] == '\n' {
-            line++
-            lastLineIdx = i + 1
-        }
-    }
-
-    column = idx - lastLineIdx
-    return line, column
 }
 
 func getMacrosFromFile(filePath string, dbtProjectYaml DbtProjectYaml) []Macro {
@@ -48,8 +34,8 @@ func getMacrosFromFile(filePath string, dbtProjectYaml DbtProjectYaml) []Macro {
         if macroNameIdx == -1 {
             continue
         }
-        startLine, startCol := getLineAndColumn(fileStr, m[2])
-        endLine, endCol := getLineAndColumn(fileStr, m[3])
+        startLine, startCol := util.GetLineAndColumn(fileStr, m[2])
+        endLine, endCol := util.GetLineAndColumn(fileStr, m[3])
         macros = append(
             macros,
             Macro{
