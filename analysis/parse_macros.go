@@ -18,15 +18,9 @@ type Macro struct {
     Range       lsp.Range
 }
 
-func getMacrosFromFile(filePath string, dbtProjectYaml DbtProjectYaml) []Macro {
-    file, err := os.ReadFile(filePath)
-    if err != nil {
-        return []Macro{}
-    }
-    fileStr := string(file)
-
-    macroDescRegex := regexp.MustCompile(`\{%-{0,1}\s*macro\s+(\w+\(.*?\))\s*-{0,1}%\}`)
-    macroMatches := macroDescRegex.FindAllStringSubmatchIndex(string(file), -1)
+func getMacrosFromFile(fileStr string, fileUri string, dbtProjectYaml DbtProjectYaml) []Macro {
+    macroDescRegex := regexp.MustCompile(`(?s)\{%-{0,1}\s*macro\s+(\w+\(.*?\))\s*-{0,1}%\}`)
+    macroMatches := macroDescRegex.FindAllStringSubmatchIndex(fileStr, -1)
 
     macros := []Macro{}
     for _, m := range macroMatches {
@@ -42,7 +36,7 @@ func getMacrosFromFile(filePath string, dbtProjectYaml DbtProjectYaml) []Macro {
                 Name:        fileStr[m[2]:m[3]][:macroNameIdx],
                 ProjectName: dbtProjectYaml.ProjectName,
                 Description: fileStr[m[2]:m[3]],
-                URI:         filePath,
+                URI:         fileUri,
                 Range:       lsp.Range{
                     Start: lsp.Position{
                         Line:      startLine,
@@ -72,7 +66,11 @@ func parseMacros(projectRoot string, dbtProjectYaml DbtProjectYaml) ([]Macro, er
         err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
             if !info.IsDir() {
                 if filepath.Ext(path) == ".sql" {
-                    macros = append(macros, getMacrosFromFile(path, dbtProjectYaml)...)
+                    fileContents, err := util.ReadFileContents(path)
+                    if err != nil {
+                        return nil
+                    }
+                    macros = append(macros, getMacrosFromFile(fileContents, path, dbtProjectYaml)...)
                 }
             }
             return nil

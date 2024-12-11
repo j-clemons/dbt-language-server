@@ -6,12 +6,12 @@ import (
 	"unicode"
 )
 
-func ReadFileContents(filename string) string {
-    contents, err := os.ReadFile(filename)
+func ReadFileContents(uri string) (string, error) {
+    contents, err := os.ReadFile(uri)
     if err != nil {
-        panic(err)
+        return "", err
     }
-    return string(contents)
+    return string(contents), nil
 }
 
 func getStringUnderCursor(text string, line int, column int) string {
@@ -45,7 +45,10 @@ func getStringUnderCursor(text string, line int, column int) string {
 
 func StringUnderCursor(uri string, line int, pos int) string {
     cleanedUri := uri[7:]
-    contents := ReadFileContents(cleanedUri)
+    contents, err := ReadFileContents(cleanedUri)
+    if err != nil {
+        return ""
+    }
 
     return getStringUnderCursor(contents, line, pos)
 }
