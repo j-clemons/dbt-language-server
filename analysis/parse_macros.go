@@ -2,7 +2,6 @@ package analysis
 
 import (
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -63,18 +62,21 @@ func parseMacros(projectRoot string, dbtProjectYaml DbtProjectYaml) ([]Macro, er
         if err != nil {
             continue
         }
-        err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-            if !info.IsDir() {
-                if filepath.Ext(path) == ".sql" {
-                    fileContents, err := util.ReadFileContents(path)
-                    if err != nil {
-                        return nil
-                    }
-                    macros = append(macros, getMacrosFromFile(fileContents, path, dbtProjectYaml)...)
-                }
+        macroFilePaths, err := walkFilepath(path, ".sql")
+        if err != nil {
+            continue
+        }
+
+        for _, macroFilePath := range macroFilePaths {
+            fileContents, err := util.ReadFileContents(macroFilePath)
+            if err != nil {
+                continue
             }
-            return nil
-        })
+            macros = append(
+                macros,
+                getMacrosFromFile(fileContents, macroFilePath, dbtProjectYaml)...
+            )
+        }
     }
     return macros, err
 }

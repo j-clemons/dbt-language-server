@@ -17,14 +17,14 @@ func createSqlFileNameMap(root string, paths []string) (map[string]string, error
         if err != nil {
             continue
         }
-        err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-            if !info.IsDir() {
-                if filepath.Ext(path) == ".sql" {
-                    sqlFileMap[info.Name()[:len(info.Name()) - 4]] = path
-                }
-            }
-            return nil
-        })
+        validPaths, err := walkFilepath(path, ".sql")
+        if err != nil {
+            continue
+        }
+
+        for _, validPath := range validPaths {
+            sqlFileMap[filepath.Base(validPath)[:len(filepath.Base(validPath)) - 4]] = validPath
+        }
     }
 
     return sqlFileMap, err
