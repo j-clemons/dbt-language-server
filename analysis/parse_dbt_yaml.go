@@ -21,6 +21,7 @@ type DbtProjectYaml struct {
     ModelPaths          []string               `yaml:"model-paths"`
     MacroPaths          []string               `yaml:"macro-paths"`
     PackagesInstallPath string                 `yaml:"packages-install-path"`
+    DocsPaths           []string               `yaml:"docs-paths"`
     Vars                map[string]interface{} `yaml:"vars"`
 }
 
@@ -48,6 +49,11 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     }
     if projYaml.PackagesInstallPath == "" {
         projYaml.PackagesInstallPath = "dbt_packages"
+    }
+    if projYaml.DocsPaths == nil || len(projYaml.DocsPaths) == 0 {
+        projYaml.DocsPaths = []string{"docs"}
+        projYaml.DocsPaths = append(projYaml.DocsPaths, projYaml.ModelPaths...)
+        projYaml.DocsPaths = append(projYaml.DocsPaths, projYaml.MacroPaths...)
     }
     return projYaml
 }
