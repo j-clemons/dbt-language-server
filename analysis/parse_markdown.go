@@ -4,6 +4,8 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type Docs struct {
@@ -52,4 +54,16 @@ func makeDocsMap(docs []Docs) map[string]Docs {
         docsMap[d.Name] = d
     }
     return docsMap
+}
+
+func processDocsFiles(docsFilesUri []string) map[string]Docs {
+    docs := []Docs{}
+    for _, docsFile := range docsFilesUri {
+        docsContents, err := util.ReadFileContents(docsFile)
+        if err != nil {
+            continue
+        }
+        docs = append(docs, getDocsFileContents(docsContents)...)
+    }
+    return makeDocsMap(docs)
 }

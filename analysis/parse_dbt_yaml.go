@@ -3,6 +3,7 @@ package analysis
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"gopkg.in/yaml.v3"
 )
@@ -79,6 +80,9 @@ func parseSchemaYamlFile(path string) SchemaYaml {
 func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Model {
     modelMap := make(map[string]Model)
 
+    docsFiles := getDocsFiles(projYaml)
+    docsMap := processDocsFiles(docsFiles)
+
     for _, path := range projYaml.ModelPaths {
         _, err := os.ReadDir(projectRoot+"/"+path)
         if err != nil {
@@ -88,10 +92,33 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
         for _, file := range files {
             dbtYml := parseSchemaYamlFile(file)
             for _, model := range dbtYml.Models {
-                modelMap[model.Name] = model
+                modelMap[model.Name] = Model{
+                    Name:        model.Name,
+                    Description: replaceDescriptionDocsBlocks(model.Description, docsMap),
+                }
             }
         }
     }
 
     return modelMap
+}
+
+func replaceDescriptionDocsBlocks(description string, docsMap map[string]Docs) string {
+    docBlocksRegex := regexp.MustCompile(`{{\s*doc\(('|")([-zA-z]+)('|")\)\s*}}`)
+
+    matches := docBlocksRegex.FindAllStringSubmatchIndex(description, -1)
+    if len(matches) == 0 {
+        return description
+    }
+
+    newDescription := description
+    for i := 0; i < len(matches); i++ {
+        docName := description[matches[i][4]:matches[i][5]]
+
+        if _, ok := docsMap[docName]; ok {
+            newDescription = newDescription[:matches[i][0]] + docsMap[docName].Content + newDescription[matches[i][1]:]
+        }
+    }
+
+    return newDescription
 }
