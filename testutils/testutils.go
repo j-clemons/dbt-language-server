@@ -7,7 +7,7 @@ import (
 
 // GetTestDataPath returns the absolute path to a file in the testdata directory
 // given the relative path in the testdata directory
-func GetTestDataPath(relativePath string) (string, error) {
+func GetTestdataPath(relativePath string) (string, error) {
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		return "", &PathError{"unable to determine caller location"}
@@ -24,4 +24,3 @@ type PathError struct {
 func (e *PathError) Error() string {
 	return e.Message
 }
-

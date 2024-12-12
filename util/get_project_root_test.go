@@ -8,7 +8,7 @@ import (
 )
 
 func TestFindFileDir(t *testing.T) {
-    expectedTestDataPath, err := testutils.GetTestDataPath("")
+    expectedTestDataPath, err := testutils.GetTestdataPath("")
     expected := filepath.Join(
         expectedTestDataPath,
         "jaffle_shop_duckdb",
@@ -17,7 +17,7 @@ func TestFindFileDir(t *testing.T) {
         t.Fatal(err)
     }
 
-    testdataPath, err := testutils.GetTestDataPath("jaffle_shop_duckdb/models")
+    testdataPath, err := testutils.GetTestdataPath("jaffle_shop_duckdb/models")
     if err != nil {
         t.Fatal(err)
     }
