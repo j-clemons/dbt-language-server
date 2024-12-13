@@ -79,7 +79,7 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
         },
     }
 
-    cursorStr := util.StringUnderCursor(uri, position.Line, position.Character)
+    cursorStr := util.GetStringUnderCursor(s.Documents[uri], position.Line, position.Character)
 
     if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
         response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
@@ -116,7 +116,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         },
 	}
 
-    cursorStr := util.StringUnderCursor(uri, position.Line, position.Character)
+    cursorStr := util.GetStringUnderCursor(s.Documents[uri], position.Line, position.Character)
 
     if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
         response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorStr].URI

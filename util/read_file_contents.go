@@ -14,7 +14,7 @@ func ReadFileContents(uri string) (string, error) {
     return string(contents), nil
 }
 
-func getStringUnderCursor(text string, line int, column int) string {
+func GetStringUnderCursor(text string, line int, column int) string {
     lines := strings.Split(text, "\n")
 
     if line < 0 || line > len(lines) {
@@ -41,16 +41,6 @@ func getStringUnderCursor(text string, line int, column int) string {
     }
 
     return currentLine[start:end]
-}
-
-func StringUnderCursor(uri string, line int, pos int) string {
-    cleanedUri := uri[7:]
-    contents, err := ReadFileContents(cleanedUri)
-    if err != nil {
-        return ""
-    }
-
-    return getStringUnderCursor(contents, line, pos)
 }
 
 func GetLineAndColumn(input string, idx int) (line, column int) {
