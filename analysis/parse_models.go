@@ -12,7 +12,7 @@ func createSqlFileNameMap(root string, paths []string) (map[string]string, error
     var err error
 
     for _, p := range paths {
-        path := root + "/" + p
+        path := filepath.Join(root, p)
         _, err = os.ReadDir(path)
         if err != nil {
             continue

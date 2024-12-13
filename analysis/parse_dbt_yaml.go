@@ -3,6 +3,7 @@ package analysis
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 
 	"gopkg.in/yaml.v3"
@@ -27,9 +28,9 @@ type DbtProjectYaml struct {
 }
 
 func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
-    file, err := os.Open(projectRoot+"/dbt_project.yml")
+    file, err := os.Open(filepath.Join(projectRoot,"dbt_project.yml"))
 	if err != nil {
-		fmt.Printf("Error opening file: %v", err)
+		fmt.Printf("Error opening file: %v\n", err)
         return DbtProjectYaml{}
 
 	}
@@ -38,7 +39,7 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
 	var projYaml DbtProjectYaml
 	decoder := yaml.NewDecoder(file)
 	if err := decoder.Decode(&projYaml); err != nil {
-		fmt.Printf("Error decoding YAML: %v", err)
+		fmt.Printf("Error decoding YAML: %v\n", err)
         return DbtProjectYaml{}
 	}
 
@@ -80,7 +81,7 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
 func parseSchemaYamlFile(path string) SchemaYaml {
     file, err := os.Open(path)
 	if err != nil {
-		fmt.Printf("Error opening file: %v", err)
+		fmt.Printf("Error opening file: %v\n", err)
         return SchemaYaml{}
 
 	}
@@ -89,7 +90,7 @@ func parseSchemaYamlFile(path string) SchemaYaml {
 	var config SchemaYaml
 	decoder := yaml.NewDecoder(file)
 	if err := decoder.Decode(&config); err != nil {
-		fmt.Printf("Error decoding YAML: %v", err)
+		fmt.Printf("Error decoding YAML: %v\n", err)
         return SchemaYaml{}
 	}
     return config

@@ -17,14 +17,12 @@ func getModelDetails(projectRoot string) map[string]ModelDetails {
     dbtProjectYaml := parseDbtProjectYaml(projectRoot)
     packageDetails := getPackageModelDetails(projectRoot, dbtProjectYaml)
 
-    processList := []ProjectDetails{}
-    processList = append(
-        processList,
+    processList := []ProjectDetails{
         ProjectDetails{
             RootPath: projectRoot,
             DbtProjectYaml: dbtProjectYaml,
         },
-    )
+    }
     processList = append(processList, packageDetails...)
 
     for _, p := range processList {

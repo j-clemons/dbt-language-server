@@ -1,15 +1,18 @@
 package analysis
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 func getPackageRootPaths(projectRoot string, projYaml DbtProjectYaml) []string {
     packagePaths := []string{}
-    projectPackagePath := projectRoot + "/" + projYaml.PackagesInstallPath
+    projectPackagePath := filepath.Join(projectRoot, projYaml.PackagesInstallPath)
 
     files, _ := os.ReadDir(projectPackagePath)
     for _, file := range files {
         if file.IsDir() {
-            packagePaths = append(packagePaths, projectPackagePath + "/" + file.Name())
+            packagePaths = append(packagePaths, filepath.Join(projectPackagePath, file.Name()))
         }
     }
     return packagePaths
@@ -24,7 +27,7 @@ func getPackageModelPaths(packagePath string) ProjectDetails {
     validModelPaths := []string{}
     dbtYml := getPackageDbtProjectYaml(packagePath)
     for _, path := range dbtYml.ModelPaths {
-        _, err := os.ReadDir(packagePath + "/" + path)
+        _, err := os.ReadDir(filepath.Join(packagePath, path))
         if err == nil {
             validModelPaths = append(validModelPaths, path)
         }
@@ -45,7 +48,7 @@ func getPackageMacroPaths(packagePath string) ProjectDetails {
     validMacroPaths := []string{}
     dbtYml := getPackageDbtProjectYaml(packagePath)
     for _, path := range dbtYml.MacroPaths {
-        _, err := os.ReadDir(packagePath + "/" + path)
+        _, err := os.ReadDir(filepath.Join(packagePath, path))
         if err == nil {
             validMacroPaths = append(validMacroPaths, path)
         }
