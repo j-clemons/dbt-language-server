@@ -28,8 +28,10 @@ func findFileDir(fileName string, startPath string) (string, error) {
     }
 }
 
-func GetProjectRoot(projFile string) string {
-    wd, _ := os.Getwd()
+func GetProjectRoot(projFile string, wd string) string {
+    if wd == "" {
+        wd, _ = os.Getwd()
+    }
     dir, err := findFileDir(projFile, wd)
     if err != nil {
         log.Print(err)

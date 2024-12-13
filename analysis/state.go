@@ -35,8 +35,8 @@ func NewState() State {
     }
 }
 
-func (s *State) refreshDbtContext() {
-    s.DbtContext.ProjectRoot = util.GetProjectRoot("dbt_project.yml")
+func (s *State) refreshDbtContext(wd string) {
+    s.DbtContext.ProjectRoot = util.GetProjectRoot("dbt_project.yml", wd)
 
     s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
     newModelDetailMap := getModelDetails(s.DbtContext.ProjectRoot)
@@ -57,7 +57,7 @@ func (s *State) refreshDbtContext() {
 
 func (s *State) OpenDocument(uri, text string) {
     s.Documents[uri] = text
-    s.refreshDbtContext()
+    s.refreshDbtContext("")
 }
 
 func (s *State) UpdateDocument(uri, text string) {
@@ -65,7 +65,7 @@ func (s *State) UpdateDocument(uri, text string) {
 }
 
 func (s *State) SaveDocument(uri string) {
-    s.refreshDbtContext()
+    s.refreshDbtContext("")
 }
 
 func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverResponse {
