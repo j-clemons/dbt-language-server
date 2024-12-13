@@ -42,17 +42,35 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
         return DbtProjectYaml{}
 	}
 
+    availableDirs := map[string]int{}
+    entries, err := os.ReadDir(projectRoot)
+	if err == nil {
+        for _, entry := range entries {
+            if entry.IsDir() {
+                availableDirs[entry.Name()] = 1
+            }
+        }
+	}
+
     if projYaml.ModelPaths == nil || len(projYaml.ModelPaths) == 0 {
-        projYaml.ModelPaths = []string{"models"}
+        if availableDirs["models"] == 1 {
+            projYaml.ModelPaths = []string{"models"}
+        }
     }
     if projYaml.MacroPaths == nil || len(projYaml.MacroPaths) == 0 {
-        projYaml.MacroPaths = []string{"macros"}
+        if availableDirs["macros"] == 1 {
+            projYaml.MacroPaths = []string{"macros"}
+        }
     }
     if projYaml.PackagesInstallPath == "" {
-        projYaml.PackagesInstallPath = "dbt_packages"
+        if availableDirs["dbt_packages"] == 1 {
+            projYaml.PackagesInstallPath = "dbt_packages"
+        }
     }
     if projYaml.DocsPaths == nil || len(projYaml.DocsPaths) == 0 {
-        projYaml.DocsPaths = []string{"docs"}
+        if availableDirs["docs"] == 1 {
+            projYaml.DocsPaths = []string{"docs"}
+        }
         projYaml.DocsPaths = append(projYaml.DocsPaths, projYaml.ModelPaths...)
         projYaml.DocsPaths = append(projYaml.DocsPaths, projYaml.MacroPaths...)
     }
