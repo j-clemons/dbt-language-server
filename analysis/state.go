@@ -26,8 +26,8 @@ func NewState() State {
     return State{
         Documents: map[string]string{},
         DbtContext: DbtContext{
-            ProjectRoot:    util.GetProjectRoot("dbt_project.yml"),
-            ProjectYaml:    parseDbtProjectYaml(util.GetProjectRoot("dbt_project.yml")),
+            ProjectRoot:    "",
+            ProjectYaml:    DbtProjectYaml{},
             ModelDetailMap: map[string]ModelDetails{},
             MacroDetailMap: map[string]Macro{},
             VariableMap:    map[string]interface{}{},
