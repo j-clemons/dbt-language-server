@@ -7,6 +7,9 @@ import (
 
 func getPackageRootPaths(projectRoot string, projYaml DbtProjectYaml) []string {
     packagePaths := []string{}
+    if projYaml.PackagesInstallPath == "" {
+        return packagePaths
+    }
     projectPackagePath := filepath.Join(projectRoot, projYaml.PackagesInstallPath)
 
     files, _ := os.ReadDir(projectPackagePath)
