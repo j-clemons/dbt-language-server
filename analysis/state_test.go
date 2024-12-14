@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/testutils"
 )
 
@@ -13,47 +14,109 @@ func expectedTestState() State {
     if err != nil {
         panic(err)
     }
-    expectedState := State{
-        Documents: map[string]string{},
+
+    expectedState :=  State{
+        Documents:map[string]string{},
         DbtContext: DbtContext{
-            ProjectRoot: testdataRoot,
+            ProjectRoot:"/home/jclemons/Projects/dbt-lsp/testdata/jaffle_shop_duckdb",
             ProjectYaml: DbtProjectYaml{
-                ProjectName:         "jaffle_shop",
-                ModelPaths:          []string{"models"},
-                MacroPaths:          []string{"macros"},
-                PackagesInstallPath: "",
-                DocsPaths:           []string{"models","macros"},
-                Vars:                map[string]interface {}(nil),
+                ProjectName:"jaffle_shop",
+                ModelPaths:[]string{"models"},
+                MacroPaths:[]string{"macros"},
+                PackagesInstallPath:"dbt_packages",
+                DocsPaths:[]string{"models","macros"},
+                Vars:map[string]interface {}{
+                    "global_count":0,
+                    "jaffle_shop":map[string]interface {}{"jaffle_number":1,"jaffle_string":"jaffle"},
+                },
             },
-            ModelDetailMap: map[string]ModelDetails{
+            ModelDetailMap:map[string] ModelDetails{
                 "customers": ModelDetails{
-                    URI:         filepath.Join(testdataRoot, "models/customers.sql"),
-                    ProjectName: "jaffle_shop",
-                    Description: "This table has basic information about a customer, as well as some derived facts based on a customer's orders",
+                    URI:filepath.Join(testdataRoot, "models/customers.sql"),
+                    ProjectName:"jaffle_shop",
+                    Description:"This table has basic information about a customer, as well as some derived facts based on a customer's orders",
                 },
                 "orders": ModelDetails{
-                    URI:         filepath.Join(testdataRoot, "models/orders.sql"),
-                    ProjectName: "jaffle_shop",
-                    Description: "This table has basic information about orders, as well as some derived facts based on payments",
+                    URI:filepath.Join(testdataRoot, "models/orders.sql"),
+                    ProjectName:"jaffle_shop",
+                    Description:"This table has basic information about orders, as well as some derived facts based on payments",
+                },
+                "stg_customer_status": ModelDetails{
+                    URI:filepath.Join(testdataRoot, "dbt_packages/jaffle_package/models/stg_customer_status.sql"),
+                    ProjectName:"jaffle_package",
+                    Description:"",
                 },
                 "stg_customers": ModelDetails{
-                    URI:         filepath.Join(testdataRoot, "models/staging/stg_customers.sql"),
-                    ProjectName: "jaffle_shop",
-                    Description: "",
+                    URI:filepath.Join(testdataRoot, "models/staging/stg_customers.sql"),
+                    ProjectName:"jaffle_shop",
+                    Description:"",
                 },
                 "stg_orders": ModelDetails{
-                    URI:         filepath.Join(testdataRoot, "models/staging/stg_orders.sql"),
-                    ProjectName: "jaffle_shop",
-                    Description: "",
+                    URI:filepath.Join(testdataRoot, "models/staging/stg_orders.sql"),
+                    ProjectName:"jaffle_shop",
+                    Description:"",
                 },
                 "stg_payments": ModelDetails{
-                    URI:         filepath.Join(testdataRoot, "models/staging/stg_payments.sql"),
-                    ProjectName: "jaffle_shop",
-                    Description: "",
+                    URI:filepath.Join(testdataRoot, "models/staging/stg_payments.sql"),
+                    ProjectName:"jaffle_shop",
+                    Description:"",
                 },
             },
-            MacroDetailMap: map[string]Macro{},
-            VariableMap:    map[string]interface {}{},
+            MacroDetailMap:map[string] Macro{
+                "add_values": Macro{
+                    Name:"add_values",
+                    ProjectName:"jaffle_package",
+                    Description:"add_values(arg1, arg2)",
+                    URI:filepath.Join(testdataRoot, "dbt_packages/jaffle_package/macros/jaffle_package_macros.sql"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{
+                            Line:0,
+                            Character:9,
+                        },
+                        End:lsp.Position{
+                            Line:0,
+                            Character:31,
+                        },
+                    },
+                },
+                "full_name": Macro{
+                    Name:"full_name",
+                    ProjectName:"jaffle_shop",
+                    Description:"full_name(first_name, last_name)",
+                    URI:filepath.Join(testdataRoot, "macros/jaffle_macros.sql"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{
+                            Line:0,
+                            Character:9,
+                        },
+                        End:lsp.Position{
+                            Line:0,
+                            Character:41,
+                        },
+                    },
+                },
+                "times_five": Macro{
+                    Name:"times_five",
+                    ProjectName:"jaffle_shop",
+                    Description:"times_five(int_value)",
+                    URI:filepath.Join(testdataRoot, "macros/jaffle_macros.sql"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{
+                            Line:6,
+                            Character:10,
+                        },
+                        End:lsp.Position{
+                            Line:6,
+                            Character:31,
+                        },
+                    },
+                },
+            },
+            VariableMap:map[string]interface{}{
+                "global_count":0,
+                "jaffle_number":1,
+                "jaffle_string":"jaffle",
+            },
         },
     }
 

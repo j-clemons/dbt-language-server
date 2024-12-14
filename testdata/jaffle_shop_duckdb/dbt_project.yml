@@ -32,3 +32,12 @@ models:
         node_color: 'silver'
     +docs:
       node_color: 'gold'
+
+vars:
+  global_count: 0
+
+  jaffle_shop:
+    jaffle_string: 'jaffle'
+    jaffle_number: 1
+
+

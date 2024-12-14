@@ -16,6 +16,12 @@ payments as (
 
 ),
 
+status as (
+
+    select * from {{ ref('stg_customer_status') }}
+
+),
+
 customer_orders as (
 
         select
@@ -48,13 +54,17 @@ customer_payments as (
 final as (
 
     select
+        {{ var('jaffle_string') }} as jaffle_string,
         customers.customer_id,
         customers.first_name,
         customers.last_name,
+        {{ full_name('first_name', 'last_name') }} as full_name,
         customer_orders.first_order,
         customer_orders.most_recent_order,
         customer_orders.number_of_orders,
-        customer_payments.total_amount as customer_lifetime_value
+        {{ times_five('number_of_orders') }} as lifetime_order_number,
+        customer_payments.total_amount as customer_lifetime_value,
+        {{ jaffle_package.add_values('number_of_orders', 'lifetime_order_number') }} as lifetime_order_number
 
     from customers
 
