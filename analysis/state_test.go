@@ -112,10 +112,52 @@ func expectedTestState() State {
                     },
                 },
             },
-            VariableMap:map[string]interface{}{
-                "global_count":0,
-                "jaffle_number":1,
-                "jaffle_string":"jaffle",
+            VariableDetailMap: map[string]Variable{
+                "global_count": Variable{
+                    Name:"global_count",
+                    Value:0,
+                    URI:filepath.Join(testdataRoot, "dbt_project.yml"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{
+                            Line:36,
+                            Character:14,
+                        },
+                        End:lsp.Position{
+                            Line:36,
+                            Character:14,
+                        },
+                    },
+                },
+                "jaffle_number": Variable{
+                    Name:"jaffle_number",
+                    Value:1,
+                    URI:filepath.Join(testdataRoot, "dbt_project.yml"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{
+                            Line:40,
+                            Character:17,
+                        },
+                        End:lsp.Position{
+                            Line:40,
+                            Character:17,
+                        },
+                    },
+                },
+                "jaffle_string": Variable{
+                    Name:"jaffle_string",
+                    Value:"jaffle",
+                    URI:filepath.Join(testdataRoot, "dbt_project.yml"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{
+                            Line:39,
+                            Character:17,
+                        },
+                        End:lsp.Position{
+                            Line:39,
+                            Character:17,
+                        },
+                    },
+                },
             },
         },
     }

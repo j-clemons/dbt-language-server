@@ -93,7 +93,7 @@ func getVariableSuffix(vars string, trailingStr string) string {
     return suffix
 }
 
-func getVariableCompletionItems(variables map[string]interface{}, suffix string) []lsp.CompletionItem {
+func getVariableCompletionItems(variables map[string]Variable, suffix string) []lsp.CompletionItem {
     items := make([]lsp.CompletionItem, 0, len(variables))
 
     for k, v := range variables {
@@ -102,7 +102,7 @@ func getVariableCompletionItems(variables map[string]interface{}, suffix string)
             lsp.CompletionItem{
                 Label:         k,
                 Detail:        k,
-                Documentation: fmt.Sprintf("%v", v),
+                Documentation: fmt.Sprintf("%v", v.Value),
                 Kind:          6,
                 InsertText:    fmt.Sprintf("%s%s", k, suffix),
                 SortText:      k,

@@ -19,7 +19,7 @@ type DbtContext struct {
     ProjectYaml    DbtProjectYaml
     ModelDetailMap map[string]ModelDetails
     MacroDetailMap map[string]Macro
-    VariableMap    map[string]interface{}
+    VariableDetailMap    map[string]Variable
 }
 
 func NewState() State {
@@ -30,7 +30,7 @@ func NewState() State {
             ProjectYaml:    DbtProjectYaml{},
             ModelDetailMap: map[string]ModelDetails{},
             MacroDetailMap: map[string]Macro{},
-            VariableMap:    map[string]interface{}{},
+            VariableDetailMap:    map[string]Variable{},
         },
     }
 }
@@ -49,9 +49,9 @@ func (s *State) refreshDbtContext(wd string) {
         s.DbtContext.MacroDetailMap[k] = v
     }
 
-    newVariableMap := getProjectVariables(s.DbtContext.ProjectYaml)
-    for k, v := range newVariableMap {
-        s.DbtContext.VariableMap[k] = v
+    newVariableDetailMap := getProjectVariables(s.DbtContext.ProjectYaml, s.DbtContext.ProjectRoot)
+    for k, v := range newVariableDetailMap {
+        s.DbtContext.VariableDetailMap[k] = v
     }
 }
 
@@ -85,11 +85,11 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
         response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
     } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
         response.Result.Contents = s.DbtContext.MacroDetailMap[cursorStr].Description
-    } else if s.DbtContext.VariableMap[cursorStr] != nil {
+    } else if s.DbtContext.VariableDetailMap[cursorStr].Name != "" {
         response.Result.Contents = fmt.Sprintf(
             "%v: %v",
             cursorStr,
-            s.DbtContext.VariableMap[cursorStr],
+            s.DbtContext.VariableDetailMap[cursorStr].Value,
         )
     }
     return response
@@ -133,6 +133,9 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
     } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
         response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorStr].URI
         response.Result.Range = s.DbtContext.MacroDetailMap[cursorStr].Range
+    } else if s.DbtContext.VariableDetailMap[cursorStr].Name != "" {
+        response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorStr].URI
+        response.Result.Range = s.DbtContext.VariableDetailMap[cursorStr].Range
     }
 
 	return response
@@ -160,7 +163,7 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
         )
     } else if varRegex.MatchString(textBeforeCursor) {
         items = getVariableCompletionItems(
-            s.DbtContext.VariableMap,
+            s.DbtContext.VariableDetailMap,
             getVariableSuffix(textBeforeCursor, textAfterCursor),
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
