@@ -1,7 +1,6 @@
 package analysis
 
 import (
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -19,16 +18,52 @@ func expectedTestState() State {
     expectedState :=  State{
         Documents:map[string]string{},
         DbtContext: DbtContext{
-            ProjectRoot:"/home/jclemons/Projects/dbt-lsp/testdata/jaffle_shop_duckdb",
+            ProjectRoot: testdataRoot,
             ProjectYaml: DbtProjectYaml{
-                ProjectName:"jaffle_shop",
-                ModelPaths:[]string{"models"},
-                MacroPaths:[]string{"macros"},
-                PackagesInstallPath:"dbt_packages",
-                DocsPaths:[]string{"models","macros"},
-                Vars:map[string]interface {}{
-                    "global_count":0,
-                    "jaffle_shop":map[string]interface {}{"jaffle_number":1,"jaffle_string":"jaffle"},
+                ProjectName:AnnotatedField[string]{
+                    Value:"jaffle_shop",
+                    Position:lsp.Position{
+                        Line:0,
+                        Character:6,
+                    },
+                },
+                ModelPaths:AnnotatedField[[]string]{
+                    Value:[]string{"models"},
+                    Position:lsp.Position{
+                        Line:7,
+                        Character:13,
+                    },
+                },
+                MacroPaths:AnnotatedField[[]string]{
+                    Value:[]string{"macros"},
+                    Position:lsp.Position{
+                        Line:11,
+                        Character:13,
+                    },
+                },
+                PackagesInstallPath:AnnotatedField[string]{
+                    Value:"dbt_packages",
+                    Position:lsp.Position{
+                        Line:0,
+                        Character:0,
+                    },
+                },
+                DocsPaths:AnnotatedField[[]string]{
+                    Value:[]string{"models","macros"},
+                    Position:lsp.Position{
+                        Line:0,
+                        Character:0,
+                    },
+                },
+                Vars:AnnotatedField[map[string]interface{}]{
+                    Value:map[string]interface{}{
+                        "global_count":0,
+                        "jaffle_shop":map[string]interface {}{"jaffle_number":1,"jaffle_string":"jaffle"},
+                    },
+                    Position:lsp.Position{
+                        Line:36,
+                        Character:2,
+                    },
                 },
             },
             ModelDetailMap:map[string] ModelDetails{
@@ -176,10 +211,9 @@ func TestRefreshDbtContext(t *testing.T) {
 
     state := NewState()
     state.refreshDbtContext(testdataRoot)
-    fmt.Printf("%#v\n", state)
 
     if !reflect.DeepEqual(state, expectedState) {
-        t.Fatalf("expected %v, got %v", expectedState, state)
+        t.Fatalf("expected %v,\n\ngot %v", expectedState, state)
     }
 }
 

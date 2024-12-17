@@ -27,8 +27,8 @@ type AnnotatedField[T any] struct {
 
 func (a *AnnotatedField[T]) UnmarshalYAML(value *yaml.Node) error {
 	a.Position = lsp.Position{
-		Line:      value.Line,
-		Character: value.Column,
+		Line:      value.Line - 1,
+		Character: value.Column - 1,
 	}
 	return value.Decode(&a.Value)
 }
