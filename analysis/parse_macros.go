@@ -33,7 +33,7 @@ func getMacrosFromFile(fileStr string, fileUri string, dbtProjectYaml DbtProject
             macros,
             Macro{
                 Name:        fileStr[m[2]:m[3]][:macroNameIdx],
-                ProjectName: dbtProjectYaml.ProjectName,
+                ProjectName: dbtProjectYaml.ProjectName.Value,
                 Description: fileStr[m[2]:m[3]],
                 URI:         fileUri,
                 Range:       lsp.Range{
@@ -56,7 +56,7 @@ func parseMacros(projectRoot string, dbtProjectYaml DbtProjectYaml) ([]Macro, er
     macros := []Macro{}
 
     var err error
-    for _, p := range dbtProjectYaml.MacroPaths {
+    for _, p := range dbtProjectYaml.MacroPaths.Value {
         path := projectRoot + "/" + p
         _, err = os.ReadDir(path)
         if err != nil {

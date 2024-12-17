@@ -60,7 +60,7 @@ func getMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYa
 
     for k := range macroMap {
         var insertText string
-        if ProjectYaml.ProjectName == macroMap[k].ProjectName {
+        if ProjectYaml.ProjectName.Value == macroMap[k].ProjectName {
             insertText = k
         } else {
             insertText = fmt.Sprintf("%s.%s", macroMap[k].ProjectName, k)

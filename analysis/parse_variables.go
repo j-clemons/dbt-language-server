@@ -18,7 +18,7 @@ type Variable struct {
 func getProjectVariables(dbtProjectYaml DbtProjectYaml, projectRoot string) map[string]Variable {
     vars := make(map[string]Variable)
 
-    if dbtProjectYaml.Vars == nil {
+    if dbtProjectYaml.Vars.Value == nil {
         return vars
     }
 
@@ -28,12 +28,12 @@ func getProjectVariables(dbtProjectYaml DbtProjectYaml, projectRoot string) map[
         fileStr = ""
     }
 
-    for k, v := range dbtProjectYaml.Vars {
+    for k, v := range dbtProjectYaml.Vars.Value {
         re := regexp.MustCompile(`(?s)vars:.*?(` + k + `)`)
         matches := re.FindAllStringSubmatchIndex(fileStr, -1)
         l, c := util.GetLineAndColumn(fileStr, matches[0][1])
 
-        if k != dbtProjectYaml.ProjectName {
+        if k != dbtProjectYaml.ProjectName.Value {
            vars[k] = Variable{
                Name:  k,
                Value: v,
@@ -52,13 +52,13 @@ func getProjectVariables(dbtProjectYaml DbtProjectYaml, projectRoot string) map[
         }
     }
 
-    projectVars, ok := dbtProjectYaml.Vars[dbtProjectYaml.ProjectName].(map[string]interface{})
+    projectVars, ok := dbtProjectYaml.Vars.Value[dbtProjectYaml.ProjectName.Value].(map[string]interface{})
     if !ok {
         return vars
     }
 
     for k, v := range projectVars {
-        re := regexp.MustCompile(`(?s)vars:.*?(` + dbtProjectYaml.ProjectName + `).*?(` + k + `)`)
+        re := regexp.MustCompile(`(?s)vars:.*?(` + dbtProjectYaml.ProjectName.Value + `).*?(` + k + `)`)
         matches := re.FindAllStringSubmatchIndex(fileStr, -1)
         l, c := util.GetLineAndColumn(fileStr, matches[0][1])
 

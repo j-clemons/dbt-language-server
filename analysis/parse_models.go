@@ -31,7 +31,7 @@ func createSqlFileNameMap(root string, paths []string) (map[string]string, error
 }
 
 func createModelPathMap(projectRoot string, projYaml DbtProjectYaml) map[string]string {
-    files, err := createSqlFileNameMap(projectRoot, projYaml.ModelPaths)
+    files, err := createSqlFileNameMap(projectRoot, projYaml.ModelPaths.Value)
     if err != nil {
         log.Print(err)
         return nil
