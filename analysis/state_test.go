@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -175,6 +176,7 @@ func TestRefreshDbtContext(t *testing.T) {
 
     state := NewState()
     state.refreshDbtContext(testdataRoot)
+    fmt.Printf("%#v\n", state)
 
     if !reflect.DeepEqual(state, expectedState) {
         t.Fatalf("expected %v, got %v", expectedState, state)

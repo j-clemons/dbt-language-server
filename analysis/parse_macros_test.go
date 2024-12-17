@@ -31,9 +31,11 @@ func TestGetMacrosFromFile(t *testing.T) {
             fileStr:  macroFileStr,
             fileUri:  "file:///path/to/file.sql",
             dbtProjectYaml: DbtProjectYaml{
-                ProjectName: "example",
-                MacroPaths: []string{
-                    "macros",
+                ProjectName: AnnotatedField[string]{Value: "example"},
+                MacroPaths: AnnotatedField[[]string]{
+                    Value: []string{
+                        "macros",
+                    },
                 },
             },
             expected: []Macro{
