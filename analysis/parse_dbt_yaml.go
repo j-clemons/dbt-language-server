@@ -33,13 +33,61 @@ func (a *AnnotatedField[T]) UnmarshalYAML(value *yaml.Node) error {
 	return value.Decode(&a.Value)
 }
 
+type AnnotatedMap map[string]AnnotatedField[any]
+
+func (a *AnnotatedMap) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("expected mapping node but got %v", value.Kind)
+	}
+
+    *a = make(AnnotatedMap)
+	for i := 0; i < len(value.Content); i += 2 {
+		keyNode := value.Content[i]
+		valueNode := value.Content[i+1]
+
+		var key string
+		if err := keyNode.Decode(&key); err != nil {
+			return fmt.Errorf("failed to decode key: %w", err)
+		}
+
+		if valueNode.Kind == yaml.MappingNode {
+			var nested AnnotatedMap
+			if err := valueNode.Decode(&nested); err != nil {
+				return fmt.Errorf("failed to decode nested map for key '%s': %w", key, err)
+			}
+
+			(*a)[key] = AnnotatedField[any]{
+				Value: nested,
+				Position: lsp.Position{
+					Line:      valueNode.Line - 1,
+					Character: valueNode.Column - 1,
+				},
+			}
+		} else {
+			var value any
+			if err := valueNode.Decode(&value); err != nil {
+				return fmt.Errorf("failed to decode value for key '%s': %w", key, err)
+			}
+
+			(*a)[key] = AnnotatedField[any]{
+				Value: value,
+                Position: lsp.Position{
+					Line:      valueNode.Line - 1,
+                    Character: valueNode.Column - 1,
+				},
+			}
+		}
+	}
+	return nil
+}
+
 type DbtProjectYaml struct {
-	ProjectName         AnnotatedField[string]                 `yaml:"name"`
-	ModelPaths          AnnotatedField[[]string]               `yaml:"model-paths"`
-	MacroPaths          AnnotatedField[[]string]               `yaml:"macro-paths"`
-	PackagesInstallPath AnnotatedField[string]                 `yaml:"packages-install-path"`
-	DocsPaths           AnnotatedField[[]string]               `yaml:"docs-paths"`
-	Vars                AnnotatedField[map[string]interface{}] `yaml:"vars"`
+	ProjectName         AnnotatedField[string]   `yaml:"name"`
+	ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
+	MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
+	PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`
+	DocsPaths           AnnotatedField[[]string] `yaml:"docs-paths"`
+	Vars                AnnotatedMap             `yaml:"vars"`
 }
 
 func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {

@@ -55,14 +55,35 @@ func expectedTestState() State {
                         Character:0,
                     },
                 },
-                Vars:AnnotatedField[map[string]interface{}]{
-                    Value:map[string]interface{}{
-                        "global_count":0,
-                        "jaffle_shop":map[string]interface {}{"jaffle_number":1,"jaffle_string":"jaffle"},
+                Vars:AnnotatedMap{
+                    "global_count":AnnotatedField[interface{}]{
+                        Value:0,
+                        Position:lsp.Position{
+                            Line:36,
+                            Character:16,
+                        },
                     },
-                    Position:lsp.Position{
-                        Line:36,
-                        Character:2,
+                    "jaffle_shop":AnnotatedField[interface{}]{
+                        Value:AnnotatedMap{
+                            "jaffle_number":AnnotatedField[interface{}]{
+                                Value:1,
+                                Position:lsp.Position{
+                                    Line:40,
+                                    Character:19,
+                                },
+                            },
+                            "jaffle_string":AnnotatedField[interface{}]{
+                                Value:"jaffle",
+                                Position:lsp.Position{
+                                    Line:39,
+                                    Character:19,
+                                },
+                            },
+                        },
+                        Position:lsp.Position{
+                            Line:39,
+                            Character:4,
+                        },
                     },
                 },
             },
@@ -156,11 +177,11 @@ func expectedTestState() State {
                     Range:lsp.Range{
                         Start:lsp.Position{
                             Line:36,
-                            Character:14,
+                            Character:16,
                         },
                         End:lsp.Position{
                             Line:36,
-                            Character:14,
+                            Character:16,
                         },
                     },
                 },
@@ -171,11 +192,11 @@ func expectedTestState() State {
                     Range:lsp.Range{
                         Start:lsp.Position{
                             Line:40,
-                            Character:17,
+                            Character:19,
                         },
                         End:lsp.Position{
                             Line:40,
-                            Character:17,
+                            Character:19,
                         },
                     },
                 },
@@ -186,11 +207,11 @@ func expectedTestState() State {
                     Range:lsp.Range{
                         Start:lsp.Position{
                             Line:39,
-                            Character:17,
+                            Character:19,
                         },
                         End:lsp.Position{
                             Line:39,
-                            Character:17,
+                            Character:19,
                         },
                     },
                 },
