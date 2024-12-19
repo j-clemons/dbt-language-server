@@ -10,27 +10,27 @@ import (
 )
 
 type State struct {
-    Documents map[string]string
+    Documents  map[string]string
     DbtContext DbtContext
 }
 
 type DbtContext struct {
-    ProjectRoot    string
-    ProjectYaml    DbtProjectYaml
-    ModelDetailMap map[string]ModelDetails
-    MacroDetailMap map[string]Macro
-    VariableDetailMap    map[string]Variable
+    ProjectRoot       string
+    ProjectYaml       DbtProjectYaml
+    ModelDetailMap    map[string]ModelDetails
+    MacroDetailMap    map[string]Macro
+    VariableDetailMap map[string]Variable
 }
 
 func NewState() State {
     return State{
-        Documents: map[string]string{},
+        Documents:  map[string]string{},
         DbtContext: DbtContext{
-            ProjectRoot:    "",
-            ProjectYaml:    DbtProjectYaml{},
-            ModelDetailMap: map[string]ModelDetails{},
-            MacroDetailMap: map[string]Macro{},
-            VariableDetailMap:    map[string]Variable{},
+            ProjectRoot:       "",
+            ProjectYaml:       DbtProjectYaml{},
+            ModelDetailMap:    map[string]ModelDetails{},
+            MacroDetailMap:    map[string]Macro{},
+            VariableDetailMap: map[string]Variable{},
         },
     }
 }
