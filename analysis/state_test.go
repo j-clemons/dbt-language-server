@@ -18,16 +18,73 @@ func expectedTestState() State {
     expectedState :=  State{
         Documents:map[string]string{},
         DbtContext: DbtContext{
-            ProjectRoot:"/home/jclemons/Projects/dbt-lsp/testdata/jaffle_shop_duckdb",
+            ProjectRoot: testdataRoot,
             ProjectYaml: DbtProjectYaml{
-                ProjectName:"jaffle_shop",
-                ModelPaths:[]string{"models"},
-                MacroPaths:[]string{"macros"},
-                PackagesInstallPath:"dbt_packages",
-                DocsPaths:[]string{"models","macros"},
-                Vars:map[string]interface {}{
-                    "global_count":0,
-                    "jaffle_shop":map[string]interface {}{"jaffle_number":1,"jaffle_string":"jaffle"},
+                ProjectName:AnnotatedField[string]{
+                    Value:"jaffle_shop",
+                    Position:lsp.Position{
+                        Line:0,
+                        Character:6,
+                    },
+                },
+                ModelPaths:AnnotatedField[[]string]{
+                    Value:[]string{"models"},
+                    Position:lsp.Position{
+                        Line:7,
+                        Character:13,
+                    },
+                },
+                MacroPaths:AnnotatedField[[]string]{
+                    Value:[]string{"macros"},
+                    Position:lsp.Position{
+                        Line:11,
+                        Character:13,
+                    },
+                },
+                PackagesInstallPath:AnnotatedField[string]{
+                    Value:"dbt_packages",
+                    Position:lsp.Position{
+                        Line:0,
+                        Character:0,
+                    },
+                },
+                DocsPaths:AnnotatedField[[]string]{
+                    Value:[]string{"models","macros"},
+                    Position:lsp.Position{
+                        Line:0,
+                        Character:0,
+                    },
+                },
+                Vars:AnnotatedMap{
+                    "global_count":AnnotatedField[interface{}]{
+                        Value:0,
+                        Position:lsp.Position{
+                            Line:36,
+                            Character:16,
+                        },
+                    },
+                    "jaffle_shop":AnnotatedField[interface{}]{
+                        Value:AnnotatedMap{
+                            "jaffle_number":AnnotatedField[interface{}]{
+                                Value:1,
+                                Position:lsp.Position{
+                                    Line:40,
+                                    Character:19,
+                                },
+                            },
+                            "jaffle_string":AnnotatedField[interface{}]{
+                                Value:"jaffle",
+                                Position:lsp.Position{
+                                    Line:39,
+                                    Character:19,
+                                },
+                            },
+                        },
+                        Position:lsp.Position{
+                            Line:39,
+                            Character:4,
+                        },
+                    },
                 },
             },
             ModelDetailMap:map[string] ModelDetails{
@@ -120,11 +177,11 @@ func expectedTestState() State {
                     Range:lsp.Range{
                         Start:lsp.Position{
                             Line:36,
-                            Character:14,
+                            Character:16,
                         },
                         End:lsp.Position{
                             Line:36,
-                            Character:14,
+                            Character:16,
                         },
                     },
                 },
@@ -135,11 +192,11 @@ func expectedTestState() State {
                     Range:lsp.Range{
                         Start:lsp.Position{
                             Line:40,
-                            Character:17,
+                            Character:19,
                         },
                         End:lsp.Position{
                             Line:40,
-                            Character:17,
+                            Character:19,
                         },
                     },
                 },
@@ -150,11 +207,11 @@ func expectedTestState() State {
                     Range:lsp.Range{
                         Start:lsp.Position{
                             Line:39,
-                            Character:17,
+                            Character:19,
                         },
                         End:lsp.Position{
                             Line:39,
-                            Character:17,
+                            Character:19,
                         },
                     },
                 },
@@ -177,7 +234,7 @@ func TestRefreshDbtContext(t *testing.T) {
     state.refreshDbtContext(testdataRoot)
 
     if !reflect.DeepEqual(state, expectedState) {
-        t.Fatalf("expected %v, got %v", expectedState, state)
+        t.Fatalf("expected %v,\n\ngot %v", expectedState, state)
     }
 }
 

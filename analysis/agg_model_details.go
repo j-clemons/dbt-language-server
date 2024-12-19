@@ -32,7 +32,7 @@ func getModelDetails(projectRoot string) map[string]ModelDetails {
         for k, v := range modelPathMap {
             modelMap[k] = ModelDetails{
                 URI:         v,
-                ProjectName: p.DbtProjectYaml.ProjectName,
+                ProjectName: p.DbtProjectYaml.ProjectName.Value,
                 Description: schemaDetails[k].Description,
             }
         }

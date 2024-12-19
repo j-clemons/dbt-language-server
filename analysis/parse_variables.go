@@ -2,10 +2,8 @@ package analysis
 
 import (
 	"path/filepath"
-	"regexp"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
-	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type Variable struct {
@@ -23,59 +21,35 @@ func getProjectVariables(dbtProjectYaml DbtProjectYaml, projectRoot string) map[
     }
 
     projectUri := filepath.Join(projectRoot, "dbt_project.yml")
-    fileStr, err := util.ReadFileContents(projectUri)
-    if err != nil {
-        fileStr = ""
-    }
 
     for k, v := range dbtProjectYaml.Vars {
-        re := regexp.MustCompile(`(?s)vars:.*?(` + k + `)`)
-        matches := re.FindAllStringSubmatchIndex(fileStr, -1)
-        l, c := util.GetLineAndColumn(fileStr, matches[0][1])
-
-        if k != dbtProjectYaml.ProjectName {
+        if k != dbtProjectYaml.ProjectName.Value {
            vars[k] = Variable{
                Name:  k,
-               Value: v,
+               Value: v.Value,
                URI:   projectUri,
                Range: lsp.Range{
-                   Start: lsp.Position{
-                       Line:      l,
-                       Character: c,
-                   },
-                   End: lsp.Position{
-                       Line:      l,
-                       Character: c,
-                   },
+                   Start: v.Position,
+                   End: v.Position,
                },
            }
         }
     }
 
-    projectVars, ok := dbtProjectYaml.Vars[dbtProjectYaml.ProjectName].(map[string]interface{})
+    projectVars, ok := dbtProjectYaml.Vars[dbtProjectYaml.ProjectName.Value].Value.(AnnotatedMap)
     if !ok {
         return vars
     }
 
     for k, v := range projectVars {
-        re := regexp.MustCompile(`(?s)vars:.*?(` + dbtProjectYaml.ProjectName + `).*?(` + k + `)`)
-        matches := re.FindAllStringSubmatchIndex(fileStr, -1)
-        l, c := util.GetLineAndColumn(fileStr, matches[0][1])
-
-        if v != nil {
+        if v.Value != nil {
            vars[k] = Variable{
                Name:  k,
-               Value: v,
+               Value: v.Value,
                URI:   projectUri,
                Range: lsp.Range{
-                   Start: lsp.Position{
-                       Line:      l,
-                       Character: c,
-                   },
-                   End: lsp.Position{
-                       Line:      l,
-                       Character: c,
-                   },
+                   Start: v.Position,
+                   End: v.Position,
                },
            }
         }

@@ -16,7 +16,7 @@ type Docs struct {
 func getDocsFiles(dbtProjectYaml DbtProjectYaml) []string {
     docsFiles := []string{}
 
-    for _, path := range dbtProjectYaml.DocsPaths {
+    for _, path := range dbtProjectYaml.DocsPaths.Value {
         _, err := os.ReadDir(path)
         if err != nil {
             continue
