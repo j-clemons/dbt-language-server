@@ -10,12 +10,20 @@ import (
 	"github.com/j-clemons/dbt-language-server/analysis"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/rpc"
+	"github.com/j-clemons/dbt-language-server/services"
+	"github.com/j-clemons/dbt-language-server/services/pb"
 	"github.com/j-clemons/dbt-language-server/util"
 )
 
 func main() {
     logger := util.GetLogger("log.txt")
     logger.Println("dbt Language Server Started!")
+
+    client, err := services.PythonServer()
+    if err != nil {
+        logger.Printf("Error connecting to Python server: %v\n", err)
+    }
+
     scanner := bufio.NewScanner(os.Stdin)
     scanner.Split(rpc.Split)
 
@@ -28,11 +36,18 @@ func main() {
         if err != nil {
             logger.Printf("Got an error: %s", err)
         }
-        handleMessage(logger, writer, state, method, contents)
+        handleMessage(logger, writer, state, method, contents, client)
     }
 }
 
-func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, method string, contents []byte) {
+func handleMessage(
+    logger   *log.Logger,
+    writer   io.Writer,
+    state    analysis.State,
+    method   string,
+    contents []byte,
+    client   pb.MyServiceClient,
+ ) {
     logger.Printf("Received msg with method: %s", method)
 
     switch method {

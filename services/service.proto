@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "./pb";
+
+// Define a simple message
+message Request {
+  string message = 1;
+}
+
+message Response {
+  string reply = 1;
+}
+
+// Define a service
+service MyService {
+  rpc SayHello (Request) returns (Response);
+}
