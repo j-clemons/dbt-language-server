@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MyService_SayHello_FullMethodName = "/pb.MyService/SayHello"
+	MyService_Lint_FullMethodName = "/pb.MyService/Lint"
 )
 
 // MyServiceClient is the client API for MyService service.
@@ -28,7 +28,7 @@ const (
 //
 // Define a service
 type MyServiceClient interface {
-	SayHello(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Lint(ctx context.Context, in *FileString, opts ...grpc.CallOption) (*LintResult, error)
 }
 
 type myServiceClient struct {
@@ -39,10 +39,10 @@ func NewMyServiceClient(cc grpc.ClientConnInterface) MyServiceClient {
 	return &myServiceClient{cc}
 }
 
-func (c *myServiceClient) SayHello(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+func (c *myServiceClient) Lint(ctx context.Context, in *FileString, opts ...grpc.CallOption) (*LintResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Response)
-	err := c.cc.Invoke(ctx, MyService_SayHello_FullMethodName, in, out, cOpts...)
+	out := new(LintResult)
+	err := c.cc.Invoke(ctx, MyService_Lint_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (c *myServiceClient) SayHello(ctx context.Context, in *Request, opts ...grp
 //
 // Define a service
 type MyServiceServer interface {
-	SayHello(context.Context, *Request) (*Response, error)
+	Lint(context.Context, *FileString) (*LintResult, error)
 	mustEmbedUnimplementedMyServiceServer()
 }
 
@@ -66,8 +66,8 @@ type MyServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMyServiceServer struct{}
 
-func (UnimplementedMyServiceServer) SayHello(context.Context, *Request) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+func (UnimplementedMyServiceServer) Lint(context.Context, *FileString) (*LintResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Lint not implemented")
 }
 func (UnimplementedMyServiceServer) mustEmbedUnimplementedMyServiceServer() {}
 func (UnimplementedMyServiceServer) testEmbeddedByValue()                   {}
@@ -90,20 +90,20 @@ func RegisterMyServiceServer(s grpc.ServiceRegistrar, srv MyServiceServer) {
 	s.RegisterService(&MyService_ServiceDesc, srv)
 }
 
-func _MyService_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Request)
+func _MyService_Lint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileString)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MyServiceServer).SayHello(ctx, in)
+		return srv.(MyServiceServer).Lint(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: MyService_SayHello_FullMethodName,
+		FullMethod: MyService_Lint_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MyServiceServer).SayHello(ctx, req.(*Request))
+		return srv.(MyServiceServer).Lint(ctx, req.(*FileString))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -116,8 +116,8 @@ var MyService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MyServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SayHello",
-			Handler:    _MyService_SayHello_Handler,
+			MethodName: "Lint",
+			Handler:    _MyService_Lint_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -4,16 +4,26 @@ package pb;
 
 option go_package = "./pb";
 
-// Define a simple message
-message Request {
-  string message = 1;
+message FileString {
+  string file_string = 1;
 }
 
-message Response {
-  string reply = 1;
+message LintResultItem {
+    string code = 1;
+    string description = 2;
+    string name = 3;
+    bool warning = 4;
+    int32 start_line_no = 5;
+    int32 start_line_pos = 6;
+    int32 end_line_no = 7;
+    int32 end_line_pos = 8;
+}
+
+message LintResult {
+    repeated LintResultItem items = 1;
 }
 
 // Define a service
 service MyService {
-  rpc SayHello (Request) returns (Response);
+  rpc Lint (FileString) returns (LintResult) {}
 }

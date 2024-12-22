@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -20,14 +19,15 @@ func PythonServer() (pb.MyServiceClient, error) {
 	return pb.NewMyServiceClient(conn), nil
 }
 
-func SayHello(client pb.MyServiceClient, message string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+func Lint(client pb.MyServiceClient, message string) []*pb.LintResultItem {
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+    defer cancel()
 
-	req := &pb.Request{Message: message}
-	res, err := client.SayHello(ctx, req)
+	req := &pb.FileString{FileString: message}
+	res, err := client.Lint(ctx, req)
 	if err != nil {
-		log.Fatalf("Error calling SayHello: %v", err)
+		log.Fatalf("Error calling Lint: %v", err)
 	}
-	fmt.Printf("SayHello Response: %s\n", res.Reply)
+
+    return res.Items
 }

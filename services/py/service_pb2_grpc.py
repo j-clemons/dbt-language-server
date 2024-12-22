@@ -35,10 +35,10 @@ class MyServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SayHello = channel.unary_unary(
-                '/pb.MyService/SayHello',
-                request_serializer=service__pb2.Request.SerializeToString,
-                response_deserializer=service__pb2.Response.FromString,
+        self.Lint = channel.unary_unary(
+                '/pb.MyService/Lint',
+                request_serializer=service__pb2.FileString.SerializeToString,
+                response_deserializer=service__pb2.LintResult.FromString,
                 _registered_method=True)
 
 
@@ -46,7 +46,7 @@ class MyServiceServicer(object):
     """Define a service
     """
 
-    def SayHello(self, request, context):
+    def Lint(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -55,10 +55,10 @@ class MyServiceServicer(object):
 
 def add_MyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'SayHello': grpc.unary_unary_rpc_method_handler(
-                    servicer.SayHello,
-                    request_deserializer=service__pb2.Request.FromString,
-                    response_serializer=service__pb2.Response.SerializeToString,
+            'Lint': grpc.unary_unary_rpc_method_handler(
+                    servicer.Lint,
+                    request_deserializer=service__pb2.FileString.FromString,
+                    response_serializer=service__pb2.LintResult.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -73,7 +73,7 @@ class MyService(object):
     """
 
     @staticmethod
-    def SayHello(request,
+    def Lint(request,
             target,
             options=(),
             channel_credentials=None,
@@ -86,9 +86,9 @@ class MyService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/pb.MyService/SayHello',
-            service__pb2.Request.SerializeToString,
-            service__pb2.Response.FromString,
+            '/pb.MyService/Lint',
+            service__pb2.FileString.SerializeToString,
+            service__pb2.LintResult.FromString,
             options,
             channel_credentials,
             insecure,
