@@ -19,6 +19,12 @@ func main() {
     logger := util.GetLogger("log.txt")
     logger.Println("dbt Language Server Started!")
 
+    pythonCmd, err := services.StartPythonServer()
+    if err != nil {
+        logger.Printf("Error starting Python server: %v\n", err)
+    }
+    defer pythonCmd.Process.Kill()
+
     client, err := services.PythonServer()
     if err != nil {
         logger.Printf("Error connecting to Python server: %v\n", err)

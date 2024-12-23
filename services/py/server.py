@@ -7,7 +7,7 @@ import sqlfluff
 
 class MyServiceServicer(service_pb2_grpc.MyServiceServicer):
     def Lint(self, request, context):
-        print("Received file: %s" % request.file_string)
+        print("Received file")
         lint_results = sqlfluff.lint(request.file_string)
         cleaned_lint_results = []
         for lr in lint_results:
