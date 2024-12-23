@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
+	"github.com/j-clemons/dbt-language-server/services"
+	"github.com/j-clemons/dbt-language-server/services/pb"
 	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type State struct {
     Documents  map[string]string
+    Client     pb.MyServiceClient
     DbtContext DbtContext
 }
 
@@ -22,9 +25,10 @@ type DbtContext struct {
     VariableDetailMap map[string]Variable
 }
 
-func NewState() State {
+func NewState(client pb.MyServiceClient) State {
     return State{
         Documents:  map[string]string{},
+        Client:     client,
         DbtContext: DbtContext{
             ProjectRoot:       "",
             ProjectYaml:       DbtProjectYaml{},
@@ -179,4 +183,19 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     }
 
     return response
+}
+
+func (s *State) LintDiagnostics(uri string) lsp.DiagnosticsNotification {
+    sqlfluffResults := parseSqlFluffLintResults(services.Lint(s.Client, s.Documents[uri]))
+
+    return lsp.DiagnosticsNotification{
+        Notification: lsp.Notification{
+            RPC:    "2.0",
+            Method: "textDocument/publishDiagnostics",
+        },
+        Params: lsp.PublishDiagnosticsParams{
+            URI:         uri,
+            Diagnostics: sqlfluffResults,
+        },
+    }
 }

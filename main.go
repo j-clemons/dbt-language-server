@@ -27,7 +27,7 @@ func main() {
     scanner := bufio.NewScanner(os.Stdin)
     scanner.Split(rpc.Split)
 
-    state := analysis.NewState()
+    state := analysis.NewState(client)
     writer := os.Stdout
 
     for scanner.Scan() {
@@ -74,6 +74,9 @@ func handleMessage(
 
         state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
         logger.Printf("Opened: %s\n%s", request.Params.TextDocument.URI, request.Params.TextDocument.Text)
+
+        diagnosticsNotification := state.LintDiagnostics(request.Params.TextDocument.URI)
+        writeResponse(writer, diagnosticsNotification)
     case "textDocument/didSave":
         logger.Print("textDocument/didSave")
         var request lsp.DidSaveTextDocumentNotification
@@ -84,6 +87,9 @@ func handleMessage(
 
         logger.Printf("Saved: %s", request.Params.TextDocument.URI)
         state.SaveDocument(request.Params.TextDocument.URI)
+
+        diagnosticsNotification := state.LintDiagnostics(request.Params.TextDocument.URI)
+        writeResponse(writer, diagnosticsNotification)
     case "textDocument/didChange":
         var request lsp.TextDocumentDidChangeNotification
         if err := json.Unmarshal(contents, &request); err != nil {
