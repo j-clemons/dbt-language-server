@@ -186,6 +186,20 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
 }
 
 func (s *State) LintDiagnostics(uri string) lsp.DiagnosticsNotification {
+    notification := lsp.DiagnosticsNotification{
+        Notification: lsp.Notification{
+            RPC:    "2.0",
+            Method: "textDocument/publishDiagnostics",
+        },
+        Params: lsp.PublishDiagnosticsParams{
+            URI:         uri,
+            Diagnostics: []lsp.Diagnostic{},
+        },
+    }
+
+    if uri[len(uri)-4:] != ".sql" {
+        return notification
+    }
     sqlfluffResults := parseSqlFluffLintResults(
         services.Lint(
             s.Client,
@@ -193,15 +207,7 @@ func (s *State) LintDiagnostics(uri string) lsp.DiagnosticsNotification {
             s.DbtContext.ProjectRoot,
         ),
     )
+    notification.Params.Diagnostics = sqlfluffResults
 
-    return lsp.DiagnosticsNotification{
-        Notification: lsp.Notification{
-            RPC:    "2.0",
-            Method: "textDocument/publishDiagnostics",
-        },
-        Params: lsp.PublishDiagnosticsParams{
-            URI:         uri,
-            Diagnostics: sqlfluffResults,
-        },
-    }
+    return notification
 }
