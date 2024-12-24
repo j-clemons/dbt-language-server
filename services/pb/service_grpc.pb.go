@@ -28,7 +28,7 @@ const (
 //
 // Define a service
 type MyServiceClient interface {
-	Lint(ctx context.Context, in *FileString, opts ...grpc.CallOption) (*LintResult, error)
+	Lint(ctx context.Context, in *LintRequest, opts ...grpc.CallOption) (*LintResult, error)
 }
 
 type myServiceClient struct {
@@ -39,7 +39,7 @@ func NewMyServiceClient(cc grpc.ClientConnInterface) MyServiceClient {
 	return &myServiceClient{cc}
 }
 
-func (c *myServiceClient) Lint(ctx context.Context, in *FileString, opts ...grpc.CallOption) (*LintResult, error) {
+func (c *myServiceClient) Lint(ctx context.Context, in *LintRequest, opts ...grpc.CallOption) (*LintResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LintResult)
 	err := c.cc.Invoke(ctx, MyService_Lint_FullMethodName, in, out, cOpts...)
@@ -55,7 +55,7 @@ func (c *myServiceClient) Lint(ctx context.Context, in *FileString, opts ...grpc
 //
 // Define a service
 type MyServiceServer interface {
-	Lint(context.Context, *FileString) (*LintResult, error)
+	Lint(context.Context, *LintRequest) (*LintResult, error)
 	mustEmbedUnimplementedMyServiceServer()
 }
 
@@ -66,7 +66,7 @@ type MyServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMyServiceServer struct{}
 
-func (UnimplementedMyServiceServer) Lint(context.Context, *FileString) (*LintResult, error) {
+func (UnimplementedMyServiceServer) Lint(context.Context, *LintRequest) (*LintResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Lint not implemented")
 }
 func (UnimplementedMyServiceServer) mustEmbedUnimplementedMyServiceServer() {}
@@ -91,7 +91,7 @@ func RegisterMyServiceServer(s grpc.ServiceRegistrar, srv MyServiceServer) {
 }
 
 func _MyService_Lint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FileString)
+	in := new(LintRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func _MyService_Lint_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: MyService_Lint_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MyServiceServer).Lint(ctx, req.(*FileString))
+		return srv.(MyServiceServer).Lint(ctx, req.(*LintRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

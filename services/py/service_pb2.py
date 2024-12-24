@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rservice.proto\x12\x02pb\"!\n\nFileString\x12\x13\n\x0b\x66ile_string\x18\x01 \x01(\t\"\xac\x01\n\x0eLintResultItem\x12\x0c\n\x04\x63ode\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0f\n\x07warning\x18\x04 \x01(\x08\x12\x15\n\rstart_line_no\x18\x05 \x01(\x05\x12\x16\n\x0estart_line_pos\x18\x06 \x01(\x05\x12\x13\n\x0b\x65nd_line_no\x18\x07 \x01(\x05\x12\x14\n\x0c\x65nd_line_pos\x18\x08 \x01(\x05\"/\n\nLintResult\x12!\n\x05items\x18\x01 \x03(\x0b\x32\x12.pb.LintResultItem25\n\tMyService\x12(\n\x04Lint\x12\x0e.pb.FileString\x1a\x0e.pb.LintResult\"\x00\x42\x06Z\x04./pbb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rservice.proto\x12\x02pb\"<\n\x0bLintRequest\x12\x13\n\x0b\x66ile_string\x18\x01 \x01(\t\x12\x18\n\x10sqfluff_cfg_path\x18\x02 \x01(\t\"\xac\x01\n\x0eLintResultItem\x12\x0c\n\x04\x63ode\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0f\n\x07warning\x18\x04 \x01(\x08\x12\x15\n\rstart_line_no\x18\x05 \x01(\x05\x12\x16\n\x0estart_line_pos\x18\x06 \x01(\x05\x12\x13\n\x0b\x65nd_line_no\x18\x07 \x01(\x05\x12\x14\n\x0c\x65nd_line_pos\x18\x08 \x01(\x05\"/\n\nLintResult\x12!\n\x05items\x18\x01 \x03(\x0b\x32\x12.pb.LintResultItem26\n\tMyService\x12)\n\x04Lint\x12\x0f.pb.LintRequest\x1a\x0e.pb.LintResult\"\x00\x42\x06Z\x04./pbb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,12 +32,12 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z\004./pb'
-  _globals['_FILESTRING']._serialized_start=21
-  _globals['_FILESTRING']._serialized_end=54
-  _globals['_LINTRESULTITEM']._serialized_start=57
-  _globals['_LINTRESULTITEM']._serialized_end=229
-  _globals['_LINTRESULT']._serialized_start=231
-  _globals['_LINTRESULT']._serialized_end=278
-  _globals['_MYSERVICE']._serialized_start=280
-  _globals['_MYSERVICE']._serialized_end=333
+  _globals['_LINTREQUEST']._serialized_start=21
+  _globals['_LINTREQUEST']._serialized_end=81
+  _globals['_LINTRESULTITEM']._serialized_start=84
+  _globals['_LINTRESULTITEM']._serialized_end=256
+  _globals['_LINTRESULT']._serialized_start=258
+  _globals['_LINTRESULT']._serialized_end=305
+  _globals['_MYSERVICE']._serialized_start=307
+  _globals['_MYSERVICE']._serialized_end=361
 # @@protoc_insertion_point(module_scope)

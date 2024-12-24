@@ -43,11 +43,14 @@ func PythonServer() (pb.MyServiceClient, error) {
 	return pb.NewMyServiceClient(conn), nil
 }
 
-func Lint(client pb.MyServiceClient, message string) []*pb.LintResultItem {
+func Lint(client pb.MyServiceClient, message string, cfgPath string) []*pb.LintResultItem {
     ctx, cancel := context.WithTimeout(context.Background(), time.Second)
     defer cancel()
 
-	req := &pb.FileString{FileString: message}
+	req := &pb.LintRequest{
+        FileString:     message,
+        SqfluffCfgPath: cfgPath,
+    }
 	res, err := client.Lint(ctx, req)
 	if err != nil {
 		log.Fatalf("Error calling Lint: %v", err)

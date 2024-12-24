@@ -3,12 +3,16 @@ from concurrent import futures
 import service_pb2
 import service_pb2_grpc
 import sqlfluff
+from sqlfluff.core import FluffConfig
 
 
 class MyServiceServicer(service_pb2_grpc.MyServiceServicer):
     def Lint(self, request, context):
         print("Received file")
-        lint_results = sqlfluff.lint(request.file_string)
+        config = FluffConfig.from_path(
+            path=request.sqfluff_cfg_path, overrides={"templater": "jinja"}
+        )
+        lint_results = sqlfluff.lint(request.file_string, config=config)
         cleaned_lint_results = []
         for lr in lint_results:
             cleaned_lint_results.append(clean_lint_result(lr))

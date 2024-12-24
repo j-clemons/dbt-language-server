@@ -4,8 +4,9 @@ package pb;
 
 option go_package = "./pb";
 
-message FileString {
+message LintRequest {
   string file_string = 1;
+  string sqfluff_cfg_path = 2;
 }
 
 message LintResultItem {
@@ -25,5 +26,5 @@ message LintResult {
 
 // Define a service
 service MyService {
-  rpc Lint (FileString) returns (LintResult) {}
+  rpc Lint (LintRequest) returns (LintResult) {}
 }

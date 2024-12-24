@@ -186,7 +186,13 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
 }
 
 func (s *State) LintDiagnostics(uri string) lsp.DiagnosticsNotification {
-    sqlfluffResults := parseSqlFluffLintResults(services.Lint(s.Client, s.Documents[uri]))
+    sqlfluffResults := parseSqlFluffLintResults(
+        services.Lint(
+            s.Client,
+            s.Documents[uri],
+            s.DbtContext.ProjectRoot,
+        ),
+    )
 
     return lsp.DiagnosticsNotification{
         Notification: lsp.Notification{

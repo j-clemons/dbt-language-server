@@ -37,7 +37,7 @@ class MyServiceStub(object):
         """
         self.Lint = channel.unary_unary(
                 '/pb.MyService/Lint',
-                request_serializer=service__pb2.FileString.SerializeToString,
+                request_serializer=service__pb2.LintRequest.SerializeToString,
                 response_deserializer=service__pb2.LintResult.FromString,
                 _registered_method=True)
 
@@ -57,7 +57,7 @@ def add_MyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Lint': grpc.unary_unary_rpc_method_handler(
                     servicer.Lint,
-                    request_deserializer=service__pb2.FileString.FromString,
+                    request_deserializer=service__pb2.LintRequest.FromString,
                     response_serializer=service__pb2.LintResult.SerializeToString,
             ),
     }
@@ -87,7 +87,7 @@ class MyService(object):
             request,
             target,
             '/pb.MyService/Lint',
-            service__pb2.FileString.SerializeToString,
+            service__pb2.LintRequest.SerializeToString,
             service__pb2.LintResult.FromString,
             options,
             channel_credentials,
