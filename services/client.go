@@ -13,6 +13,29 @@ import (
 	"google.golang.org/grpc"
 )
 
+func createVirtualEnv(venvPath string, requirementsFile string) {
+	if _, err := os.Stat(venvPath); os.IsNotExist(err) {
+		// Virtual environment does not exist, create and install dependencies
+		cmd := exec.Command("python", "-m", "venv", venvPath)
+		cmd.Stdout = log.Writer()
+		cmd.Stderr = log.Writer()
+		if err := cmd.Run(); err != nil {
+			log.Fatalf("Failed to create virtual environment: %v", err)
+		}
+        installDependencies(venvPath, requirementsFile)
+	}
+}
+
+func installDependencies(venvPath, requirementsFile string) {
+	pipPath := filepath.Join(venvPath, "bin", "pip")
+	cmd := exec.Command(pipPath, "install", "-r", requirementsFile)
+	cmd.Stdout = log.Writer()
+	cmd.Stderr = log.Writer()
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Failed to install dependencies: %v", err)
+	}
+}
+
 func StartPythonServer() (*exec.Cmd, error) {
 	exePath, err := os.Executable()
 	if err != nil {
@@ -20,12 +43,15 @@ func StartPythonServer() (*exec.Cmd, error) {
 	}
 	exeDir := filepath.Dir(exePath)
 
-	scriptPath := filepath.Join(exeDir, "services/py/server.py")
+    venvPath := filepath.Join(exeDir, "services/py/venv")
+    requirementsFile := filepath.Join(exeDir, "services/py/requirements.txt")
+    createVirtualEnv(venvPath, requirementsFile)
 
-	cmd := exec.Command("python", scriptPath)
+	scriptPath := filepath.Join(exeDir, "services/py/server.py")
+    venvPythonPath := filepath.Join(venvPath, "bin", "python")
+	cmd := exec.Command(venvPythonPath, scriptPath)
 	cmd.Stdout = log.Writer()
 	cmd.Stderr = log.Writer()
-
 	err = cmd.Start()
 	if err != nil {
         return nil, err

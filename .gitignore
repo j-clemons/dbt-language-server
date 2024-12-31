@@ -3,3 +3,4 @@ dbt-language-server
 .DS_Store
 
 services/py/__pycache__/
+services/py/venv/
