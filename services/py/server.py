@@ -1,3 +1,5 @@
+import signal
+import sys
 import grpc
 from concurrent import futures
 import service_pb2
@@ -36,12 +38,31 @@ def clean_lint_result(lr: dict) -> dict:
     return cleaned_lr
 
 
+def signal_handler(sig, frame):
+    print("Received shutdown signal")
+    if hasattr(signal_handler, 'server'):
+        print("Stopping gRPC server gracefully...")
+        signal_handler.server.stop(grace=5)  # 5 seconds grace period
+    sys.exit(0)
+
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     service_pb2_grpc.add_MyServiceServicer_to_server(MyServiceServicer(), server)
     server.add_insecure_port("[::]:50051")
+
+    # Store server instance in signal_handler for access during shutdown
+    signal_handler.server = server
+
+    # Set up signal handlers
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     server.start()
-    server.wait_for_termination()
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        signal_handler(signal.SIGINT, None)
 
 
 if __name__ == "__main__":
