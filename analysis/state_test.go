@@ -7,6 +7,7 @@ import (
 
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/testutils"
+	"github.com/j-clemons/dbt-language-server/services/pb"
 )
 
 func expectedTestState() State {
@@ -230,7 +231,8 @@ func TestRefreshDbtContext(t *testing.T) {
 
     expectedState := expectedTestState()
 
-    state := NewState()
+    var client pb.MyServiceClient
+    state := NewState(client)
     state.refreshDbtContext(testdataRoot)
 
     if !reflect.DeepEqual(state, expectedState) {
@@ -245,7 +247,8 @@ func BenchmarkRefreshDbtContext(b *testing.B) {
             b.Fatal(err)
         }
 
-        state := NewState()
+        var client pb.MyServiceClient
+        state := NewState(client)
         state.refreshDbtContext(testdataRoot)
     }
 }
