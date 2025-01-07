@@ -1,7 +1,10 @@
 package analysis
 
 import (
-    "testing"
+	"reflect"
+	"testing"
+
+	"github.com/j-clemons/dbt-language-server/lsp"
 )
 
 func TestReverseRefPrefix(t *testing.T) {
@@ -128,5 +131,45 @@ func TestGetVariableSuffix(t *testing.T) {
                     tc.vars, tc.trailing, result, tc.expected)
             }
         })
+    }
+}
+
+func TestGetMacroCompletionItems(t *testing.T) {
+    testState := expectedTestState()
+
+    actualCompletionItems := getMacroCompletionItems(
+        testState.DbtContext.MacroDetailMap,
+        testState.DbtContext.ProjectYaml,
+    )
+
+    expectedCompletionItems := []lsp.CompletionItem{
+        {
+            Label:         "add_values",
+            Detail:        "Project: jaffle_package",
+            Documentation: "add_values(arg1, arg2)",
+            Kind:          15,
+            InsertText:    "jaffle_package.add_values",
+            SortText:      "add_values",
+        },
+        {
+            Label:         "full_name",
+            Detail:        "Project: jaffle_shop",
+            Documentation: "full_name(first_name, last_name)",
+            Kind:          15,
+            InsertText:    "full_name",
+            SortText:      "full_name",
+        },
+        {
+            Label:         "times_five",
+            Detail:        "Project: jaffle_shop",
+            Documentation: "times_five(int_value)",
+            Kind:          15,
+            InsertText:    "times_five",
+            SortText:      "times_five",
+        },
+    }
+
+    if !reflect.DeepEqual(actualCompletionItems, expectedCompletionItems) {
+        t.Fatalf("expected %v,\n\ngot %v", expectedCompletionItems, actualCompletionItems)
     }
 }
