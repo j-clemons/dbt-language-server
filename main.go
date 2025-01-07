@@ -28,11 +28,11 @@ func main() {
         if err != nil {
             logger.Printf("Got an error: %s", err)
         }
-        handleMessage(logger, writer, state, method, contents)
+        handleMessage(logger, writer, &state, method, contents)
     }
 }
 
-func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, method string, contents []byte) {
+func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, method string, contents []byte) {
     logger.Printf("Received msg with method: %s", method)
 
     switch method {
@@ -58,7 +58,9 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
         }
 
         state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
-        logger.Printf("Opened: %s\n%s", request.Params.TextDocument.URI, request.Params.TextDocument.Text)
+        logger.Printf("Opened: %s", request.Params.TextDocument.URI)
+        logger.Printf("state: %v", state.DbtContext)
+
     case "textDocument/didSave":
         logger.Print("textDocument/didSave")
         var request lsp.DidSaveTextDocumentNotification
