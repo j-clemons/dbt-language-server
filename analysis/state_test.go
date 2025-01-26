@@ -16,7 +16,7 @@ func expectedTestState() State {
     }
 
     expectedState :=  State{
-        Documents:map[string]string{},
+        Documents:map[string]Document{},
         DbtContext: DbtContext{
             ProjectRoot: testdataRoot,
             ProjectYaml: DbtProjectYaml{

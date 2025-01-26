@@ -5,13 +5,19 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/j-clemons/dbt-language-server/analysis/parser"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type State struct {
-    Documents  map[string]string
+    Documents  map[string]Document
     DbtContext DbtContext
+}
+
+type Document struct {
+    Text   string
+    Tokens *parser.TokenIndex
 }
 
 type DbtContext struct {
@@ -24,7 +30,7 @@ type DbtContext struct {
 
 func NewState() State {
     return State{
-        Documents:  map[string]string{},
+        Documents:  map[string]Document{},
         DbtContext: DbtContext{
             ProjectRoot:       "",
             ProjectYaml:       DbtProjectYaml{},
@@ -56,12 +62,12 @@ func (s *State) refreshDbtContext(wd string) {
 }
 
 func (s *State) OpenDocument(uri, text string) {
-    s.Documents[uri] = text
+    s.Documents[uri] = Document{Text: text, Tokens: parser.Tokenizer(text)}
     s.refreshDbtContext("")
 }
 
 func (s *State) UpdateDocument(uri, text string) {
-    s.Documents[uri] = text
+    s.Documents[uri] = Document{Text: text, Tokens: parser.Tokenizer(text)}
 }
 
 func (s *State) SaveDocument(uri string) {
@@ -79,7 +85,11 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
         },
     }
 
-    cursorStr := util.GetStringUnderCursor(s.Documents[uri], position.Line, position.Character)
+    cursorToken, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
+    if err != nil {
+        return response
+    }
+    cursorStr := cursorToken.Literal
 
     if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
         response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
@@ -116,7 +126,11 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         },
 	}
 
-    cursorStr := util.GetStringUnderCursor(s.Documents[uri], position.Line, position.Character)
+    cursorToken, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
+    if err != nil {
+        return response
+    }
+    cursorStr := cursorToken.Literal
 
     if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
         response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorStr].URI
@@ -144,7 +158,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position) lsp.CompletionResponse {
     items := []lsp.CompletionItem{}
 
-    fileContents := s.Documents[uri]
+    fileContents := s.Documents[uri].Text
     lines := strings.Split(fileContents, "\n")
     lineText := lines[position.Line]
 
