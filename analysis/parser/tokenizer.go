@@ -31,6 +31,14 @@ func createTokenIndex(tokens []Token) *TokenIndex {
     return index
 }
 
+func createTokenNameMap(tokens []Token) map[string]Token {
+    tokenMap := make(map[string]Token)
+    for _, token := range tokens {
+        tokenMap[token.Literal] = token
+    }
+    return tokenMap
+}
+
 func Tokenizer(input string) *TokenIndex {
     tokens := tokenize(input)
     return createTokenIndex(tokens)

@@ -16,8 +16,9 @@ type State struct {
 }
 
 type Document struct {
-    Text   string
-    Tokens *parser.TokenIndex
+    Text      string
+    Tokens    *parser.TokenIndex
+    DefTokens map[string]parser.Token
 }
 
 type DbtContext struct {
@@ -62,12 +63,20 @@ func (s *State) refreshDbtContext(wd string) {
 }
 
 func (s *State) OpenDocument(uri, text string) {
-    s.Documents[uri] = Document{Text: text, Tokens: parser.Tokenizer(text)}
+    s.Documents[uri] = Document{
+        Text:      text,
+        Tokens:    parser.Tokenizer(text),
+        DefTokens: parser.Parse(text),
+    }
     s.refreshDbtContext("")
 }
 
 func (s *State) UpdateDocument(uri, text string) {
-    s.Documents[uri] = Document{Text: text, Tokens: parser.Tokenizer(text)}
+    s.Documents[uri] = Document{
+        Text:      text,
+        Tokens:    parser.Tokenizer(text),
+        DefTokens: parser.Parse(text),
+    }
 }
 
 func (s *State) SaveDocument(uri string) {
@@ -150,6 +159,20 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
     } else if s.DbtContext.VariableDetailMap[cursorStr].Name != "" {
         response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorStr].URI
         response.Result.Range = s.DbtContext.VariableDetailMap[cursorStr].Range
+    } else if s.Documents[uri].DefTokens[cursorStr].Literal != "" {
+        response.Result.URI = uri
+        line := s.Documents[uri].DefTokens[cursorStr].Line
+        column := s.Documents[uri].DefTokens[cursorStr].Column
+        response.Result.Range = lsp.Range{
+            Start: lsp.Position{
+                Line:      line,
+                Character: column,
+            },
+            End: lsp.Position{
+                Line:      line,
+                Character: column,
+            },
+        }
     }
 
 	return response
