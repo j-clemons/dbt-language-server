@@ -24,6 +24,15 @@ func New(input string) *Lexer {
     return l
 }
 
+func Tokenize(input string) []Token {
+    l := New(input)
+    var tokens []Token
+    for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
+        tokens = append(tokens, tok)
+    }
+    return tokens
+}
+
 func (l *Lexer) readChar() error {
     ch, err := l.reader.ReadByte()
     if err != nil {
@@ -118,7 +127,7 @@ func (l *Lexer) NextToken() Token {
 func (l *Lexer) readIdentifier() string {
     var buf bytes.Buffer
 
-    for isLetter(l.ch) {
+    for (isLetter(l.ch) || isDigit(l.ch)) {
         buf.WriteByte(l.ch)
         l.readChar()
     }
