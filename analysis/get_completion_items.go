@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
+	"github.com/j-clemons/dbt-language-server/lsp/completionKind"
 )
 
 func getRefCompletionItems(modelMap map[string]ModelDetails, suffix string) []lsp.CompletionItem {
@@ -18,7 +19,7 @@ func getRefCompletionItems(modelMap map[string]ModelDetails, suffix string) []ls
                 Label:         k,
                 Detail:        fmt.Sprintf("Project: %s", modelMap[k].ProjectName),
                 Documentation: modelMap[k].Description,
-                Kind:          18,
+                Kind:          completionKind.Reference,
                 InsertText:    fmt.Sprintf("%s%s", k, suffix),
                 SortText:      k,
             },
@@ -72,7 +73,7 @@ func getMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYa
                 Label:         k,
                 Detail:        fmt.Sprintf("Project: %s", macroMap[k].ProjectName),
                 Documentation: macroMap[k].Description,
-                Kind:          15,
+                Kind:          completionKind.Snippet,
                 InsertText:    insertText,
                 SortText:      k,
             },
@@ -103,7 +104,7 @@ func getVariableCompletionItems(variables map[string]Variable, suffix string) []
                 Label:         k,
                 Detail:        k,
                 Documentation: fmt.Sprintf("%v", v.Value),
-                Kind:          6,
+                Kind:          completionKind.Variable,
                 InsertText:    fmt.Sprintf("%s%s", k, suffix),
                 SortText:      k,
             },

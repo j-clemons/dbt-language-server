@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/j-clemons/dbt-language-server/analysis/parser"
+	"github.com/j-clemons/dbt-language-server/docs"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/util"
 )
@@ -110,6 +111,8 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
             cursorStr,
             s.DbtContext.VariableDetailMap[cursorStr].Value,
         )
+    } else if docs.SnowflakeFunctions[cursorStr] != "" {
+        response.Result.Contents = docs.SnowflakeFunctions[cursorStr]
     }
     return response
 }
@@ -205,6 +208,8 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
         items = getMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)
+    } else {
+        items = docs.FunctionCompletionItems()
     }
 
     response := lsp.CompletionResponse{
