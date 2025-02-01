@@ -3,10 +3,11 @@ package parser
 type TokenType string
 
 type Token struct {
-    Type    TokenType
-    Literal string
-    Line    int
-    Column  int
+    Type     TokenType
+    Literal  string
+    Line     int
+    Column   int
+    DbtToken bool
 }
 
 const (

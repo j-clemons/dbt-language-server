@@ -24,7 +24,14 @@ func createTokenIndex(tokens []Token) *TokenIndex {
         lineTokens: make(map[int][]Token),
     }
     
+    dbtToken := false
     for _, token := range tokens {
+        if token.Type == DB_LBRACE {
+            dbtToken = true
+        } else if token.Type == DB_RBRACE {
+            dbtToken = false
+        }
+        token.DbtToken = dbtToken
         index.lineTokens[token.Line] = append(index.lineTokens[token.Line], token)
     }
     

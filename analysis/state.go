@@ -102,22 +102,25 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
     if err != nil {
         return response
     }
-    cursorStr := cursorToken.Literal
 
     dialectFunctions := s.DbtContext.Dialect.FunctionDocs()
 
-    if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
-        response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
-    } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
-        response.Result.Contents = s.DbtContext.MacroDetailMap[cursorStr].Description
-    } else if s.DbtContext.VariableDetailMap[cursorStr].Name != "" {
-        response.Result.Contents = fmt.Sprintf(
-            "%v: %v",
-            cursorStr,
-            s.DbtContext.VariableDetailMap[cursorStr].Value,
-        )
-    } else if dialectFunctions[cursorStr] != "" {
-        response.Result.Contents = dialectFunctions[cursorStr]
+    if cursorToken.DbtToken {
+        if s.DbtContext.ModelDetailMap[cursorToken.Literal].URI != "" {
+            response.Result.Contents = s.DbtContext.ModelDetailMap[cursorToken.Literal].Description
+        } else if s.DbtContext.MacroDetailMap[cursorToken.Literal].URI != "" {
+            response.Result.Contents = s.DbtContext.MacroDetailMap[cursorToken.Literal].Description
+        } else if s.DbtContext.VariableDetailMap[cursorToken.Literal].Name != "" {
+            response.Result.Contents = fmt.Sprintf(
+                "%v: %v",
+                cursorToken.Literal,
+                s.DbtContext.VariableDetailMap[cursorToken.Literal].Value,
+            )
+        }
+    } else {
+        if dialectFunctions[cursorToken.Literal] != "" {
+            response.Result.Contents = dialectFunctions[cursorToken.Literal]
+        }
     }
     return response
 }
@@ -147,10 +150,18 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
     if err != nil {
         return response
     }
-    cursorStr := cursorToken.Literal
 
-    if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
-        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorStr].URI
+    if cursorToken.DbtToken {
+        if s.DbtContext.MacroDetailMap[cursorToken.Literal].URI != "" {
+            response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorToken.Literal].URI
+            response.Result.Range = s.DbtContext.MacroDetailMap[cursorToken.Literal].Range
+        } else if s.DbtContext.VariableDetailMap[cursorToken.Literal].Name != "" {
+            response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorToken.Literal].URI
+            response.Result.Range = s.DbtContext.VariableDetailMap[cursorToken.Literal].Range
+        }
+    }
+    if s.DbtContext.ModelDetailMap[cursorToken.Literal].URI != "" {
+        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorToken.Literal].URI
         response.Result.Range = lsp.Range{
                 Start: lsp.Position{
                     Line:      0,
@@ -161,16 +172,10 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
                     Character: 0,
                 },
         }
-    } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
-        response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorStr].URI
-        response.Result.Range = s.DbtContext.MacroDetailMap[cursorStr].Range
-    } else if s.DbtContext.VariableDetailMap[cursorStr].Name != "" {
-        response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorStr].URI
-        response.Result.Range = s.DbtContext.VariableDetailMap[cursorStr].Range
-    } else if s.Documents[uri].DefTokens[cursorStr].Literal != "" {
+    } else if s.Documents[uri].DefTokens[cursorToken.Literal].Literal != "" {
         response.Result.URI = uri
-        line := s.Documents[uri].DefTokens[cursorStr].Line
-        column := s.Documents[uri].DefTokens[cursorStr].Column
+        line := s.Documents[uri].DefTokens[cursorToken.Literal].Line
+        column := s.Documents[uri].DefTokens[cursorToken.Literal].Column
         response.Result.Range = lsp.Range{
             Start: lsp.Position{
                 Line:      line,
