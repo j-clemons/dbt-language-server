@@ -50,20 +50,10 @@ func (s *State) refreshDbtContext(wd string) {
 
     s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
     s.DbtContext.Dialect = util.GetDialect(s.DbtContext.ProjectYaml.Profile.Value, wd)
-    newModelDetailMap := getModelDetails(s.DbtContext.ProjectRoot)
-    for k, v := range newModelDetailMap {
-        s.DbtContext.ModelDetailMap[k] = v
-    }
 
-    newMacroDetailMap := getMacroDetails(s.DbtContext.ProjectRoot)
-    for k, v := range newMacroDetailMap {
-        s.DbtContext.MacroDetailMap[k] = v
-    }
-
-    newVariableDetailMap := getProjectVariables(s.DbtContext.ProjectYaml, s.DbtContext.ProjectRoot)
-    for k, v := range newVariableDetailMap {
-        s.DbtContext.VariableDetailMap[k] = v
-    }
+    s.DbtContext.ModelDetailMap = getModelDetails(s.DbtContext.ProjectRoot)
+    s.DbtContext.MacroDetailMap = getMacroDetails(s.DbtContext.ProjectRoot)
+    s.DbtContext.VariableDetailMap = getProjectVariables(s.DbtContext.ProjectYaml, s.DbtContext.ProjectRoot)
 }
 
 func (s *State) OpenDocument(uri, text string) {
