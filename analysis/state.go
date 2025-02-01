@@ -25,6 +25,7 @@ type Document struct {
 type DbtContext struct {
     ProjectRoot       string
     ProjectYaml       DbtProjectYaml
+    Dialect           docs.Dialect
     ModelDetailMap    map[string]ModelDetails
     MacroDetailMap    map[string]Macro
     VariableDetailMap map[string]Variable
@@ -36,6 +37,7 @@ func NewState() State {
         DbtContext: DbtContext{
             ProjectRoot:       "",
             ProjectYaml:       DbtProjectYaml{},
+            Dialect:           "",
             ModelDetailMap:    map[string]ModelDetails{},
             MacroDetailMap:    map[string]Macro{},
             VariableDetailMap: map[string]Variable{},
@@ -47,6 +49,7 @@ func (s *State) refreshDbtContext(wd string) {
     s.DbtContext.ProjectRoot = util.GetProjectRoot("dbt_project.yml", wd)
 
     s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
+    s.DbtContext.Dialect = util.GetDialect(s.DbtContext.ProjectYaml.Profile.Value, wd)
     newModelDetailMap := getModelDetails(s.DbtContext.ProjectRoot)
     for k, v := range newModelDetailMap {
         s.DbtContext.ModelDetailMap[k] = v
@@ -101,6 +104,8 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
     }
     cursorStr := cursorToken.Literal
 
+    dialectFunctions := s.DbtContext.Dialect.FunctionDocs()
+
     if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
         response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
     } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
@@ -111,8 +116,8 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
             cursorStr,
             s.DbtContext.VariableDetailMap[cursorStr].Value,
         )
-    } else if docs.SnowflakeFunctions[cursorStr] != "" {
-        response.Result.Contents = docs.SnowflakeFunctions[cursorStr]
+    } else if dialectFunctions[cursorStr] != "" {
+        response.Result.Contents = dialectFunctions[cursorStr]
     }
     return response
 }
@@ -209,7 +214,7 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
         items = getMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)
     } else {
-        items = docs.FunctionCompletionItems()
+        items = s.DbtContext.Dialect.FunctionCompletionItems()
     }
 
     response := lsp.CompletionResponse{

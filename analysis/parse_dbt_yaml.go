@@ -83,6 +83,7 @@ func (a *AnnotatedMap) UnmarshalYAML(value *yaml.Node) error {
 
 type DbtProjectYaml struct {
 	ProjectName         AnnotatedField[string]   `yaml:"name"`
+    Profile             AnnotatedField[string]   `yaml:"profile"`
 	ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
 	MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
 	PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/j-clemons/dbt-language-server/docs"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/testutils"
 )
@@ -25,6 +26,13 @@ func expectedTestState() State {
                     Position:lsp.Position{
                         Line:0,
                         Character:6,
+                    },
+                },
+                Profile:AnnotatedField[string]{
+                    Value:"jaffle_shop",
+                    Position:lsp.Position{
+                        Line:5,
+                        Character:9,
                     },
                 },
                 ModelPaths:AnnotatedField[[]string]{
@@ -87,6 +95,7 @@ func expectedTestState() State {
                     },
                 },
             },
+            Dialect: docs.Dialect("duckdb"),
             ModelDetailMap:map[string] ModelDetails{
                 "customers": ModelDetails{
                     URI:filepath.Join(testdataRoot, "models/customers.sql"),
@@ -234,7 +243,7 @@ func TestRefreshDbtContext(t *testing.T) {
     state.refreshDbtContext(testdataRoot)
 
     if !reflect.DeepEqual(state, expectedState) {
-        t.Fatalf("expected %v,\n\ngot %v", expectedState, state)
+        t.Fatalf("expected %#v,\n\ngot %#v", expectedState, state)
     }
 }
 
