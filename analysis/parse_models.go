@@ -1,9 +1,11 @@
 package analysis
 
 import (
-    "os"
-    "log"
-    "path/filepath"
+	"log"
+	"os"
+	"path/filepath"
+
+	"github.com/j-clemons/dbt-language-server/util"
 )
 
 func createSqlFileNameMap(root string, paths []string) (map[string]string, error) {
@@ -17,7 +19,7 @@ func createSqlFileNameMap(root string, paths []string) (map[string]string, error
         if err != nil {
             continue
         }
-        validPaths, err := walkFilepath(path, ".sql")
+        validPaths, err := util.WalkFilepath(path, ".sql")
         if err != nil {
             continue
         }

@@ -21,7 +21,7 @@ func getDocsFiles(dbtProjectYaml DbtProjectYaml) []string {
         if err != nil {
             continue
         }
-        docsPaths, err := walkFilepath(path, ".md")
+        docsPaths, err := util.WalkFilepath(path, ".md")
         if err != nil {
             continue
         }

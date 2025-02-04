@@ -169,7 +169,7 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
         if err != nil {
             continue
         }
-        files, _ := walkFilepath(projectRoot+"/"+path+"/", ".yml")
+        files, _ := util.WalkFilepath(projectRoot+"/"+path+"/", ".yml")
         for _, file := range files {
             dbtYml := parseSchemaYamlFile(file)
             for _, model := range dbtYml.Models {
