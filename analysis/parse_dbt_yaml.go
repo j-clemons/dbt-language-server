@@ -11,20 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type SchemaYaml struct {
-    Models []Model `yaml:"models"`
-}
-
-type Model struct {
-    Name        string      `yaml:"name"`
-    Description string      `yaml:"description"`
-    ModelConfig ModelConfig `yaml:"config"`
-}
-
-type ModelConfig struct {
-    Alias string `yaml:"alias"`
-}
-
 type AnnotatedField[T any] struct {
 	Value    T
 	Position lsp.Position
@@ -145,6 +131,17 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     return projYaml
 }
 
+type SchemaYaml struct {
+    Models []Model `yaml:"models"`
+}
+
+type Model struct {
+    Name        AnnotatedField[string] `yaml:"name"`
+    Description AnnotatedField[string] `yaml:"description"`
+    ModelConfig AnnotatedMap           `yaml:"config"`
+}
+
+
 func parseSchemaYamlFile(path string) SchemaYaml {
     file, err := os.Open(path)
 	if err != nil {
@@ -178,11 +175,17 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
         for _, file := range files {
             dbtYml := parseSchemaYamlFile(file)
             for _, model := range dbtYml.Models {
-                modelMap[model.Name] = Model{
+                modelMap[model.Name.Value] = Model{
                     Name:        model.Name,
-                    Description: replaceDescriptionDocsBlocks(model.Description, docsMap),
-                    ModelConfig: ModelConfig{
-                        Alias: model.ModelConfig.Alias,
+                    Description: AnnotatedField[string]{Value: replaceDescriptionDocsBlocks(model.Description.Value, docsMap)},
+                    ModelConfig: AnnotatedMap{
+                        "alias": AnnotatedField[any]{
+                            Value: model.ModelConfig["alias"].Value,
+                            Position: lsp.Position{
+                                Line:      model.ModelConfig["alias"].Position.Line,
+                                Character: model.ModelConfig["alias"].Position.Character,
+                            },
+                        },
                     },
                 }
             }

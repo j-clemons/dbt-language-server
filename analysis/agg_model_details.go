@@ -31,13 +31,15 @@ func getModelDetails(projectRoot string) map[string]ModelDetails {
 
         for k, v := range modelPathMap {
             modelMapKey := k
-            if schemaDetails[k].ModelConfig.Alias != "" {
-                modelMapKey = schemaDetails[k].ModelConfig.Alias
+            alias, ok := schemaDetails[k].ModelConfig["alias"].Value.(string)
+            if ok && alias != "" {
+                modelMapKey = alias
             }
+
             modelMap[modelMapKey] = ModelDetails{
                 URI:         v,
                 ProjectName: p.DbtProjectYaml.ProjectName.Value,
-                Description: schemaDetails[k].Description,
+                Description: schemaDetails[k].Description.Value,
             }
         }
     }
