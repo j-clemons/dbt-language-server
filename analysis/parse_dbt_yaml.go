@@ -16,8 +16,13 @@ type SchemaYaml struct {
 }
 
 type Model struct {
-    Name        string `yaml:"name"`
-    Description string `yaml:"description"`
+    Name        string      `yaml:"name"`
+    Description string      `yaml:"description"`
+    ModelConfig ModelConfig `yaml:"config"`
+}
+
+type ModelConfig struct {
+    Alias string `yaml:"alias"`
 }
 
 type AnnotatedField[T any] struct {
@@ -176,6 +181,9 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
                 modelMap[model.Name] = Model{
                     Name:        model.Name,
                     Description: replaceDescriptionDocsBlocks(model.Description, docsMap),
+                    ModelConfig: ModelConfig{
+                        Alias: model.ModelConfig.Alias,
+                    },
                 }
             }
         }

@@ -18,7 +18,7 @@ func getModelDetails(projectRoot string) map[string]ModelDetails {
     packageDetails := getPackageModelDetails(projectRoot, dbtProjectYaml)
 
     processList := []ProjectDetails{
-        ProjectDetails{
+        {
             RootPath: projectRoot,
             DbtProjectYaml: dbtProjectYaml,
         },
@@ -30,7 +30,11 @@ func getModelDetails(projectRoot string) map[string]ModelDetails {
         schemaDetails := parseYamlModels(p.RootPath, p.DbtProjectYaml)
 
         for k, v := range modelPathMap {
-            modelMap[k] = ModelDetails{
+            modelMapKey := k
+            if schemaDetails[k].ModelConfig.Alias != "" {
+                modelMapKey = schemaDetails[k].ModelConfig.Alias
+            }
+            modelMap[modelMapKey] = ModelDetails{
                 URI:         v,
                 ProjectName: p.DbtProjectYaml.ProjectName.Value,
                 Description: schemaDetails[k].Description,
