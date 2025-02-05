@@ -5,18 +5,27 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/j-clemons/dbt-language-server/analysis/parser"
+	"github.com/j-clemons/dbt-language-server/docs"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type State struct {
-    Documents  map[string]string
+    Documents  map[string]Document
     DbtContext DbtContext
+}
+
+type Document struct {
+    Text      string
+    Tokens    *parser.TokenIndex
+    DefTokens map[string]parser.Token
 }
 
 type DbtContext struct {
     ProjectRoot       string
     ProjectYaml       DbtProjectYaml
+    Dialect           docs.Dialect
     ModelDetailMap    map[string]ModelDetails
     MacroDetailMap    map[string]Macro
     VariableDetailMap map[string]Variable
@@ -24,10 +33,11 @@ type DbtContext struct {
 
 func NewState() State {
     return State{
-        Documents:  map[string]string{},
+        Documents:  map[string]Document{},
         DbtContext: DbtContext{
             ProjectRoot:       "",
             ProjectYaml:       DbtProjectYaml{},
+            Dialect:           "",
             ModelDetailMap:    map[string]ModelDetails{},
             MacroDetailMap:    map[string]Macro{},
             VariableDetailMap: map[string]Variable{},
@@ -39,29 +49,28 @@ func (s *State) refreshDbtContext(wd string) {
     s.DbtContext.ProjectRoot = util.GetProjectRoot("dbt_project.yml", wd)
 
     s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
-    newModelDetailMap := getModelDetails(s.DbtContext.ProjectRoot)
-    for k, v := range newModelDetailMap {
-        s.DbtContext.ModelDetailMap[k] = v
-    }
+    s.DbtContext.Dialect = util.GetDialect(s.DbtContext.ProjectYaml.Profile.Value, wd)
 
-    newMacroDetailMap := getMacroDetails(s.DbtContext.ProjectRoot)
-    for k, v := range newMacroDetailMap {
-        s.DbtContext.MacroDetailMap[k] = v
-    }
-
-    newVariableDetailMap := getProjectVariables(s.DbtContext.ProjectYaml, s.DbtContext.ProjectRoot)
-    for k, v := range newVariableDetailMap {
-        s.DbtContext.VariableDetailMap[k] = v
-    }
+    s.DbtContext.ModelDetailMap = getModelDetails(s.DbtContext.ProjectRoot)
+    s.DbtContext.MacroDetailMap = getMacroDetails(s.DbtContext.ProjectRoot)
+    s.DbtContext.VariableDetailMap = getProjectVariables(s.DbtContext.ProjectYaml, s.DbtContext.ProjectRoot)
 }
 
 func (s *State) OpenDocument(uri, text string) {
-    s.Documents[uri] = text
+    s.Documents[uri] = Document{
+        Text:      text,
+        Tokens:    parser.Tokenizer(text),
+        DefTokens: parser.Parse(text),
+    }
     s.refreshDbtContext("")
 }
 
 func (s *State) UpdateDocument(uri, text string) {
-    s.Documents[uri] = text
+    s.Documents[uri] = Document{
+        Text:      text,
+        Tokens:    parser.Tokenizer(text),
+        DefTokens: parser.Parse(text),
+    }
 }
 
 func (s *State) SaveDocument(uri string) {
@@ -79,18 +88,29 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
         },
     }
 
-    cursorStr := util.GetStringUnderCursor(s.Documents[uri], position.Line, position.Character)
+    cursorToken, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
+    if err != nil {
+        return response
+    }
 
-    if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
-        response.Result.Contents = s.DbtContext.ModelDetailMap[cursorStr].Description
-    } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
-        response.Result.Contents = s.DbtContext.MacroDetailMap[cursorStr].Description
-    } else if s.DbtContext.VariableDetailMap[cursorStr].Name != "" {
-        response.Result.Contents = fmt.Sprintf(
-            "%v: %v",
-            cursorStr,
-            s.DbtContext.VariableDetailMap[cursorStr].Value,
-        )
+    dialectFunctions := s.DbtContext.Dialect.FunctionDocs()
+
+    if cursorToken.DbtToken {
+        if s.DbtContext.ModelDetailMap[cursorToken.Literal].URI != "" {
+            response.Result.Contents = s.DbtContext.ModelDetailMap[cursorToken.Literal].Description
+        } else if s.DbtContext.MacroDetailMap[cursorToken.Literal].URI != "" {
+            response.Result.Contents = s.DbtContext.MacroDetailMap[cursorToken.Literal].Description
+        } else if s.DbtContext.VariableDetailMap[cursorToken.Literal].Name != "" {
+            response.Result.Contents = fmt.Sprintf(
+                "%v: %v",
+                cursorToken.Literal,
+                s.DbtContext.VariableDetailMap[cursorToken.Literal].Value,
+            )
+        }
+    } else {
+        if dialectFunctions[cursorToken.Literal] != "" {
+            response.Result.Contents = dialectFunctions[cursorToken.Literal]
+        }
     }
     return response
 }
@@ -116,10 +136,22 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         },
 	}
 
-    cursorStr := util.GetStringUnderCursor(s.Documents[uri], position.Line, position.Character)
+    cursorToken, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
+    if err != nil {
+        return response
+    }
 
-    if s.DbtContext.ModelDetailMap[cursorStr].URI != "" {
-        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorStr].URI
+    if cursorToken.DbtToken {
+        if s.DbtContext.MacroDetailMap[cursorToken.Literal].URI != "" {
+            response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorToken.Literal].URI
+            response.Result.Range = s.DbtContext.MacroDetailMap[cursorToken.Literal].Range
+        } else if s.DbtContext.VariableDetailMap[cursorToken.Literal].Name != "" {
+            response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorToken.Literal].URI
+            response.Result.Range = s.DbtContext.VariableDetailMap[cursorToken.Literal].Range
+        }
+    }
+    if s.DbtContext.ModelDetailMap[cursorToken.Literal].URI != "" {
+        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorToken.Literal].URI
         response.Result.Range = lsp.Range{
                 Start: lsp.Position{
                     Line:      0,
@@ -130,12 +162,20 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
                     Character: 0,
                 },
         }
-    } else if s.DbtContext.MacroDetailMap[cursorStr].URI != "" {
-        response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorStr].URI
-        response.Result.Range = s.DbtContext.MacroDetailMap[cursorStr].Range
-    } else if s.DbtContext.VariableDetailMap[cursorStr].Name != "" {
-        response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorStr].URI
-        response.Result.Range = s.DbtContext.VariableDetailMap[cursorStr].Range
+    } else if s.Documents[uri].DefTokens[cursorToken.Literal].Literal != "" {
+        response.Result.URI = uri
+        line := s.Documents[uri].DefTokens[cursorToken.Literal].Line
+        column := s.Documents[uri].DefTokens[cursorToken.Literal].Column
+        response.Result.Range = lsp.Range{
+            Start: lsp.Position{
+                Line:      line,
+                Character: column,
+            },
+            End: lsp.Position{
+                Line:      line,
+                Character: column,
+            },
+        }
     }
 
 	return response
@@ -144,7 +184,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position) lsp.CompletionResponse {
     items := []lsp.CompletionItem{}
 
-    fileContents := s.Documents[uri]
+    fileContents := s.Documents[uri].Text
     lines := strings.Split(fileContents, "\n")
     lineText := lines[position.Line]
 
@@ -168,6 +208,8 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
         items = getMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)
+    } else {
+        items = s.DbtContext.Dialect.FunctionCompletionItems()
     }
 
     response := lsp.CompletionResponse{

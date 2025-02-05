@@ -11,15 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type SchemaYaml struct {
-    Models []Model `yaml:"models"`
-}
-
-type Model struct {
-    Name        string `yaml:"name"`
-    Description string `yaml:"description"`
-}
-
 type AnnotatedField[T any] struct {
 	Value    T
 	Position lsp.Position
@@ -83,6 +74,7 @@ func (a *AnnotatedMap) UnmarshalYAML(value *yaml.Node) error {
 
 type DbtProjectYaml struct {
 	ProjectName         AnnotatedField[string]   `yaml:"name"`
+    Profile             AnnotatedField[string]   `yaml:"profile"`
 	ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
 	MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
 	PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`
@@ -139,6 +131,17 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     return projYaml
 }
 
+type SchemaYaml struct {
+    Models []Model `yaml:"models"`
+}
+
+type Model struct {
+    Name        AnnotatedField[string] `yaml:"name"`
+    Description AnnotatedField[string] `yaml:"description"`
+    ModelConfig AnnotatedMap           `yaml:"config"`
+}
+
+
 func parseSchemaYamlFile(path string) SchemaYaml {
     file, err := os.Open(path)
 	if err != nil {
@@ -168,13 +171,22 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
         if err != nil {
             continue
         }
-        files, _ := walkFilepath(projectRoot+"/"+path+"/", ".yml")
+        files, _ := util.WalkFilepath(projectRoot+"/"+path+"/", ".yml")
         for _, file := range files {
             dbtYml := parseSchemaYamlFile(file)
             for _, model := range dbtYml.Models {
-                modelMap[model.Name] = Model{
+                modelMap[model.Name.Value] = Model{
                     Name:        model.Name,
-                    Description: replaceDescriptionDocsBlocks(model.Description, docsMap),
+                    Description: AnnotatedField[string]{Value: replaceDescriptionDocsBlocks(model.Description.Value, docsMap)},
+                    ModelConfig: AnnotatedMap{
+                        "alias": AnnotatedField[any]{
+                            Value: model.ModelConfig["alias"].Value,
+                            Position: lsp.Position{
+                                Line:      model.ModelConfig["alias"].Position.Line,
+                                Character: model.ModelConfig["alias"].Position.Character,
+                            },
+                        },
+                    },
                 }
             }
         }

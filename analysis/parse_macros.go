@@ -62,7 +62,7 @@ func parseMacros(projectRoot string, dbtProjectYaml DbtProjectYaml) ([]Macro, er
         if err != nil {
             continue
         }
-        macroFilePaths, err := walkFilepath(path, ".sql")
+        macroFilePaths, err := util.WalkFilepath(path, ".sql")
         if err != nil {
             continue
         }
