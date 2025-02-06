@@ -57,14 +57,21 @@ const (
    ACCOUNT           = "ACCOUNT"
    ALL               = "ALL"
    ALTER             = "ALTER"
+   ANALYSE           = "ANALYSE"
+   ANALYZE           = "ANALYZE"
    AND               = "AND"
    ANY               = "ANY"
+   ARRAY             = "ARRAY"
    AS                = "AS"
+   ASC               = "ASC"
+   ASYMMETRIC        = "ASYMMETRIC"
    BETWEEN           = "BETWEEN"
+   BOTH              = "BOTH"
    BY                = "BY"
    CASE              = "CASE"
    CAST              = "CAST"
    CHECK             = "CHECK"
+   COLLATE           = "COLLATE"
    COLUMN            = "COLUMN"
    CONNECT           = "CONNECT"
    CONNECTION        = "CONNECTION"
@@ -77,14 +84,23 @@ const (
    CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP"
    CURRENT_USER      = "CURRENT_USER"
    DATABASE          = "DATABASE"
+   DEFAULT           = "DEFAULT"
+   DEFERRABLE        = "DEFERRABLE"
    DELETE            = "DELETE"
+   DESC              = "DESC"
+   DESCRIBE          = "DESCRIBE"
    DISTINCT          = "DISTINCT"
+   DO                = "DO"
    DROP              = "DROP"
    ELSE              = "ELSE"
+   END               = "END"
+   EXCEPT            = "EXCEPT"
    EXISTS            = "EXISTS"
    FALSE             = "FALSE"
+   FETCH             = "FETCH"
    FOLLOWING         = "FOLLOWING"
    FOR               = "FOR"
+   FOREIGN           = "FOREIGN"
    FROM              = "FROM"
    FULL              = "FULL"
    GRANT             = "GRANT"
@@ -94,6 +110,7 @@ const (
    ILIKE             = "ILIKE"
    IN                = "IN"
    INCREMENT         = "INCREMENT"
+   INITIALLY         = "INITIALLY"
    INNER             = "INNER"
    INSERT            = "INSERT"
    INTERSECT         = "INTERSECT"
@@ -102,8 +119,10 @@ const (
    ISSUE             = "ISSUE"
    JOIN              = "JOIN"
    LATERAL           = "LATERAL"
+   LEADING           = "LEADING"
    LEFT              = "LEFT"
    LIKE              = "LIKE"
+   LIMIT             = "LIMIT"
    LOCALTIME         = "LOCALTIME"
    LOCALTIMESTAMP    = "LOCALTIMESTAMP"
    MINUS_KW          = "MINUS"
@@ -111,12 +130,26 @@ const (
    NOT               = "NOT"
    NULL              = "NULL"
    OF                = "OF"
+   OFFSET            = "OFFSET"
    ON                = "ON"
+   ONLY              = "ONLY"
    OR                = "OR"
    ORDER             = "ORDER"
    ORGANIZATION      = "ORGANIZATION"
+   PIVOT             = "PIVOT"
+   PIVOT_LONGER      = "PIVOT_LONGER"
+   PIVOT_WIDER       = "PIVOT_WIDER"
+   PLACING           = "PLACING"
+   PRIMARY           = "PRIMARY"
    QUALIFY           = "QUALIFY"
+   RECURSIVE         = "RECURSIVE"
+   RECURSIVE_LONGER  = "RECURSIVE_LONGER"
+   RECURSIVE_WIDER   = "RECURSIVE_WIDER"
+   REFERENCES        = "REFERENCES"
    REGEXP            = "REGEXP"
+   REJECT            = "REJECT"
+   RETURNING         = "RETURNING"
+   RETURNING_LONGER  = "RETURNING_LONGER"
    REVOKE            = "REVOKE"
    RIGHT             = "RIGHT"
    RLIKE             = "RLIKE"
@@ -249,11 +282,92 @@ var snowflakeKeywords = map[string]TokenType{
 }
 
 
+var duckdbKeywords = map[string]TokenType{
+    "all":          ALL,
+    "analyse":      ANALYSE,
+    "analyze":      ANALYZE,
+    "and":          AND,
+    "any":          ANY,
+    "array":        ARRAY,
+    "as":           AS,
+    "asc":          ASC,
+    "asymmetric":   ASYMMETRIC,
+    "both":         BOTH,
+    "case":         CASE,
+    "cast":         CAST,
+    "check":        CHECK,
+    "collate":      COLLATE,
+    "column":       COLUMN,
+    "constraint":   CONSTRAINT,
+    "create":       CREATE,
+    "default":      DEFAULT,
+    "deferrable":   DEFERRABLE,
+    "desc":         DESC,
+    "describe":     DESCRIBE,
+    "distinct":     DISTINCT,
+    "do":           DO,
+    "else":         ELSE,
+    "end":          END,
+    "except":       EXCEPT,
+    "false":        FALSE,
+    "fetch":        FETCH,
+    "for":          FOR,
+    "foreign":      FOREIGN,
+    "from":         FROM,
+    "grant":        GRANT,
+    "group":        GROUP,
+    "having":       HAVING,
+    "in":           IN,
+    "initially":    INITIALLY,
+    "intersect":    INTERSECT,
+    "into":         INTO,
+    "lateral":      LATERAL,
+    "leading":      LEADING,
+    "limit":        LIMIT,
+    "not":          NOT,
+    "null":         NULL,
+    "offset":       OFFSET,
+    "on":           ON,
+    "only":         ONLY,
+    "or":           OR,
+    "order":        ORDER,
+    "pivot":        PIVOT,
+    "pivot_longer": PIVOT_LONGER,
+    "pivot_wider":  PIVOT_WIDER,
+    "placing":      PLACING,
+    "primary":      PRIMARY,
+    "qualify":      QUALIFY,
+    "references":   REFERENCES,
+    "returning":    RETURNING,
+    "select":       SELECT,
+    "show":         SHOW,
+    "some":         SOME,
+    "summarize":    SUMMARIZE,
+    "symmetric":    SYMMETRIC,
+    "table":        TABLE,
+    "then":         THEN,
+    "to":           TO,
+    "trailing":     TRAILING,
+    "true":         TRUE,
+    "union":        UNION,
+    "unique":       UNIQUE,
+    "unpivot":      UNPIVOT,
+    "using":        USING,
+    "variadic":     VARIADIC,
+    "when":         WHEN,
+    "where":        WHERE,
+    "window":       WINDOW,
+    "with":         WITH,
+}
+
+
 func LookupIdent(ident string, dialect docs.Dialect) TokenType {
     keywords := map[string]TokenType{}
     switch dialect {
     case "snowflake":
         keywords = snowflakeKeywords
+    case "duckdb":
+        keywords = duckdbKeywords
     }
 
     // dbt keywords
