@@ -1,5 +1,7 @@
 package parser
 
+import "github.com/j-clemons/dbt-language-server/docs"
+
 
 type Parser struct {
     l       *Lexer
@@ -7,14 +9,14 @@ type Parser struct {
     peekTok Token
 }
 
-func NewParser(input string) *Parser {
+func NewParser(input string, dialect docs.Dialect) *Parser {
     return &Parser{
-        l: New(input),
+        l: New(input, dialect),
     }
 }
 
-func Parse(input string) map[string]Token {
-    p := NewParser(input)
+func Parse(input string, dialect docs.Dialect) map[string]Token {
+    p := NewParser(input, dialect)
     ctes := p.CommonTableExpressions()
     return createTokenNameMap(ctes)
 }

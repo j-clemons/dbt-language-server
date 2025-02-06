@@ -1,6 +1,10 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/j-clemons/dbt-language-server/docs"
+)
 
 func TestNextToken(t *testing.T) {
     input := `select *
@@ -20,7 +24,7 @@ from {{ ref('users') }}`
         {Type: DB_RBRACE, Literal: "}}", Line: 1, Column: 21},
     }
 
-    l := New(input)
+    l := New(input, docs.Dialect("snowflake"))
 
     for i, tt := range tests {
         tok := l.NextToken()

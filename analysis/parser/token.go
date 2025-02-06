@@ -1,5 +1,7 @@
 package parser
 
+import "github.com/j-clemons/dbt-language-server/docs"
+
 type TokenType string
 
 type Token struct {
@@ -124,34 +126,35 @@ const (
    SCHEMA            = "SCHEMA"
    SELECT            = "SELECT"
    SET               = "SET"
+   SHOW              = "SHOW"
    SOME              = "SOME"
    START             = "START"
+   SUMMARIZE         = "SUMMARIZE"
+   SYMMETRIC         = "SYMMETRIC"
    TABLE             = "TABLE"
    TABLESAMPLE       = "TABLESAMPLE"
    THEN              = "THEN"
    TO                = "TO"
+   TRAILING          = "TRAILING"
    TRIGGER           = "TRIGGER"
    TRUE              = "TRUE"
    TRY_CAST          = "TRY_CAST"
    UNION             = "UNION"
    UNIQUE            = "UNIQUE"
+   UNPIVOT           = "UNPIVOT"
    UPDATE            = "UPDATE"
    USING             = "USING"
    VALUES            = "VALUES"
+   VARIADIC          = "VARIADIC"
    VIEW              = "VIEW"
    WHEN              = "WHEN"
    WHENEVER          = "WHENEVER"
    WHERE             = "WHERE"
+   WINDOW            = "WINDOW"
    WITH              = "WITH"
 )
 
-var keywords = map[string]TokenType{
-    // dbt keywords
-    "ref":               REF,
-    "var":               VAR,
-    "source":            SOURCE,
-
-    // snowflake keywords
+var snowflakeKeywords = map[string]TokenType{
     "account":           ACCOUNT,
     "all":               ALL,
     "alter":             ALTER,
@@ -245,7 +248,19 @@ var keywords = map[string]TokenType{
     "with":              WITH,
 }
 
-func LookupIdent(ident string) TokenType {
+
+func LookupIdent(ident string, dialect docs.Dialect) TokenType {
+    keywords := map[string]TokenType{}
+    switch dialect {
+    case "snowflake":
+        keywords = snowflakeKeywords
+    }
+
+    // dbt keywords
+    keywords["ref"] = REF
+    keywords["var"] = VAR
+    keywords["source"] = SOURCE
+
     if tok, ok := keywords[ident]; ok {
         return tok
     }

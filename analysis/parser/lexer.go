@@ -5,32 +5,27 @@ import (
 	"bytes"
 	"io"
 	"strings"
+
+	"github.com/j-clemons/dbt-language-server/docs"
 )
 
 type Lexer struct {
-    reader *bufio.Reader
-    ch     byte // current char under examination
-    line   int
-    column int
+    reader  *bufio.Reader
+    ch      byte // current char under examination
+    line    int
+    column  int
+    dialect docs.Dialect
 }
 
-func New(input string) *Lexer {
+func New(input string, dialect docs.Dialect) *Lexer {
     l := &Lexer{
-        reader: bufio.NewReader(strings.NewReader(input)),
-        line:   0,
-        column: -1,
+        reader:  bufio.NewReader(strings.NewReader(input)),
+        line:    0,
+        column:  -1,
+        dialect: dialect,
     }
     l.readChar()
     return l
-}
-
-func Tokenize(input string) []Token {
-    l := New(input)
-    var tokens []Token
-    for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
-        tokens = append(tokens, tok)
-    }
-    return tokens
 }
 
 func (l *Lexer) readChar() error {
@@ -107,7 +102,7 @@ func (l *Lexer) NextToken() Token {
             tok.Line = l.line
             tok.Column = l.column // record column at start of token
             tok.Literal = l.readIdentifier()
-            tok.Type = LookupIdent(tok.Literal)
+            tok.Type = LookupIdent(tok.Literal, l.dialect)
             return tok
         } else if isDigit(l.ch) {
             tok.Line = l.line

@@ -1,6 +1,10 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/j-clemons/dbt-language-server/docs"
+)
 
 func TestCommonTableExpressions(t *testing.T) {
     input := `with cte1 as (
@@ -17,7 +21,7 @@ cte2 as (
 select *
 from cte2`
 
-    p := NewParser(input)
+    p := NewParser(input, docs.Dialect("snowflake"))
     ctes := p.CommonTableExpressions()
 
     expected := []Token{

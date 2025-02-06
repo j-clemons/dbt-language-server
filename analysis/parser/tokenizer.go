@@ -3,11 +3,13 @@ package parser
 import (
 	"errors"
 	"sort"
+
+	"github.com/j-clemons/dbt-language-server/docs"
 )
 
 
-func tokenize(input string) []Token {
-    l := New(input)
+func tokenize(input string, dialect docs.Dialect) []Token {
+    l := New(input, dialect)
     var tokens []Token
     for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
         tokens = append(tokens, tok)
@@ -23,7 +25,7 @@ func createTokenIndex(tokens []Token) *TokenIndex {
     index := &TokenIndex{
         lineTokens: make(map[int][]Token),
     }
-    
+
     dbtToken := false
     for _, token := range tokens {
         if token.Type == DB_LBRACE {
@@ -34,7 +36,7 @@ func createTokenIndex(tokens []Token) *TokenIndex {
         token.DbtToken = dbtToken
         index.lineTokens[token.Line] = append(index.lineTokens[token.Line], token)
     }
-    
+
     return index
 }
 
@@ -46,8 +48,8 @@ func createTokenNameMap(tokens []Token) map[string]Token {
     return tokenMap
 }
 
-func Tokenizer(input string) *TokenIndex {
-    tokens := tokenize(input)
+func Tokenizer(input string, dialect docs.Dialect) *TokenIndex {
+    tokens := tokenize(input, dialect)
     return createTokenIndex(tokens)
 }
 
@@ -56,17 +58,17 @@ func (ti *TokenIndex) FindTokenAtCursor(line, column int) (*Token, error) {
     if !exists {
         return nil, errors.New("line does not exist")
     }
-    
+
     // Binary search to find the token
     idx := sort.Search(len(lineTokens), func(i int) bool {
         return lineTokens[i].Column + len(lineTokens[i].Literal) > column
     })
-    
-    if idx >= 0 && 
-       column >= lineTokens[idx].Column && 
+
+    if idx >= 0 &&
+       column >= lineTokens[idx].Column &&
        column < lineTokens[idx].Column + len(lineTokens[idx].Literal) {
         return &lineTokens[idx], nil
     }
-    
+
     return nil, errors.New("token does not exist")
 }
