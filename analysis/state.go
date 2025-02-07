@@ -57,19 +57,22 @@ func (s *State) refreshDbtContext(wd string) {
 }
 
 func (s *State) OpenDocument(uri, text string) {
+    s.refreshDbtContext("")
+
+    parserIns := parser.Parse(text, s.DbtContext.Dialect)
     s.Documents[uri] = Document{
         Text:      text,
         Tokens:    parser.Tokenizer(text, s.DbtContext.Dialect),
-        DefTokens: parser.Parse(text, s.DbtContext.Dialect),
+        DefTokens: parserIns.CreateTokenNameMap(),
     }
-    s.refreshDbtContext("")
 }
 
 func (s *State) UpdateDocument(uri, text string) {
+    parserIns := parser.Parse(text, s.DbtContext.Dialect)
     s.Documents[uri] = Document{
         Text:      text,
         Tokens:    parser.Tokenizer(text, s.DbtContext.Dialect),
-        DefTokens: parser.Parse(text, s.DbtContext.Dialect),
+        DefTokens: parserIns.CreateTokenNameMap(),
     }
 }
 

@@ -7,18 +7,31 @@ type Parser struct {
     l       *Lexer
     curTok  Token
     peekTok Token
+    ctes    CTE
+}
+
+type CTE struct {
+    Ind          bool
+    ParenCount   int
+    Tokens       []Token
+    TokenNameMap map[string]Token
 }
 
 func NewParser(input string, dialect docs.Dialect) *Parser {
     return &Parser{
         l: New(input, dialect),
+        ctes: CTE{
+            Ind: false,
+            ParenCount: -1,
+            Tokens: []Token{},
+        },
     }
 }
 
-func Parse(input string, dialect docs.Dialect) map[string]Token {
+func Parse(input string, dialect docs.Dialect) *Parser {
     p := NewParser(input, dialect)
-    ctes := p.CommonTableExpressions()
-    return createTokenNameMap(ctes)
+    p.parseTokens()
+    return p
 }
 
 func (p *Parser) NextToken() Token {
@@ -27,38 +40,56 @@ func (p *Parser) NextToken() Token {
     return p.curTok
 }
 
-func (p *Parser) CommonTableExpressions() []Token {
-    var ctes []Token
-    for p.curTok.Type != EOF {
-        if p.curTok.Type == WITH {
+func (p *Parser) parseWith() {
+    p.NextToken()
+    if p.curTok.Type == IDENT {
+        p.ctes.Ind = true
+        p.ctes.Tokens = append(p.ctes.Tokens, p.curTok)
+        if p.peekTok.Type == AS {
             p.NextToken()
-            for p.curTok.Type != EOF {
-                if p.curTok.Type == IDENT {
-                    ctes = append(ctes, p.curTok)
-                    p.NextToken()
+        }
+        if p.peekTok.Type == LPAREN {
+            p.ctes.ParenCount = 1
+        }
+        p.NextToken()
+    }
+}
 
-                    for (p.curTok.Type != LPAREN && p.curTok.Type != EOF) {
+func (p *Parser) parseTokens() []Token {
+    for p.curTok.Type != EOF {
+        switch p.curTok.Type {
+        case WITH:
+            p.parseWith()
+        case LPAREN:
+            if p.ctes.Ind {
+                p.ctes.ParenCount++
+            }
+        case RPAREN:
+            if p.ctes.Ind {
+                p.ctes.ParenCount--
+
+                if p.ctes.ParenCount == 0 {
+                    p.NextToken()
+                    if p.curTok.Type == COMMA {
                         p.NextToken()
-                    }
-                    openParen := 1
-                    for (openParen > 0 && p.curTok.Type != EOF) {
-                        p.NextToken()
-                        if p.curTok.Type == LPAREN {
-                            openParen++
-                        } else if p.curTok.Type == RPAREN {
-                            openParen--
+                        if p.curTok.Type == IDENT {
+                            p.ctes.Tokens = append(p.ctes.Tokens, p.curTok)
                         }
-                    }
-
-                    p.NextToken()
-                    if p.curTok.Type != COMMA {
-                        return ctes
+                    } else {
+                        p.ctes.Ind = false
                     }
                 }
-                p.NextToken()
             }
         }
         p.NextToken()
     }
-    return ctes
+    return p.ctes.Tokens
+}
+
+func (p *Parser) CreateTokenNameMap() map[string]Token {
+    tokenMap := make(map[string]Token)
+    for _, token := range p.ctes.Tokens {
+        tokenMap[token.Literal] = token
+    }
+    return tokenMap
 }

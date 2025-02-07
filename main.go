@@ -59,7 +59,6 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
         state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
         logger.Printf("Opened: %s", request.Params.TextDocument.URI)
-        logger.Printf("state: %v", state.DbtContext)
 
     case "textDocument/didSave":
         logger.Print("textDocument/didSave")
