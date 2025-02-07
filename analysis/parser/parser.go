@@ -1,12 +1,18 @@
 package parser
 
-import "github.com/j-clemons/dbt-language-server/docs"
+import (
+	"errors"
+	"sort"
+
+	"github.com/j-clemons/dbt-language-server/docs"
+)
 
 
 type Parser struct {
     l       *Lexer
     curTok  Token
     peekTok Token
+    tokens  []Token
     ctes    CTE
 }
 
@@ -35,6 +41,8 @@ func Parse(input string, dialect docs.Dialect) *Parser {
 }
 
 func (p *Parser) NextToken() Token {
+    p.tokens = append(p.tokens, p.curTok)
+
     p.curTok = p.peekTok
     p.peekTok = p.l.NextToken()
     return p.curTok
@@ -56,7 +64,9 @@ func (p *Parser) parseWith() {
 }
 
 func (p *Parser) parseTokens() []Token {
+    dbtToken := false
     for p.curTok.Type != EOF {
+        p.curTok.DbtToken = dbtToken
         switch p.curTok.Type {
         case WITH:
             p.parseWith()
@@ -80,6 +90,10 @@ func (p *Parser) parseTokens() []Token {
                     }
                 }
             }
+        case DB_LBRACE:
+            dbtToken = true
+        case DB_RBRACE:
+            dbtToken = false
         }
         p.NextToken()
     }
@@ -92,4 +106,40 @@ func (p *Parser) CreateTokenNameMap() map[string]Token {
         tokenMap[token.Literal] = token
     }
     return tokenMap
+}
+
+type TokenIndex struct {
+    lineTokens map[int][]Token
+}
+
+func (p *Parser) CreateTokenIndex() *TokenIndex {
+    index := &TokenIndex{
+        lineTokens: make(map[int][]Token),
+    }
+
+    for _, token := range p.tokens {
+        index.lineTokens[token.Line] = append(index.lineTokens[token.Line], token)
+    }
+
+    return index
+}
+
+func (ti *TokenIndex) FindTokenAtCursor(line, column int) (*Token, error) {
+    lineTokens, exists := ti.lineTokens[line]
+    if !exists {
+        return nil, errors.New("line does not exist")
+    }
+
+    // Binary search to find the token
+    idx := sort.Search(len(lineTokens), func(i int) bool {
+        return lineTokens[i].Column + len(lineTokens[i].Literal) > column
+    })
+
+    if idx >= 0 &&
+       column >= lineTokens[idx].Column &&
+       column < lineTokens[idx].Column + len(lineTokens[idx].Literal) {
+        return &lineTokens[idx], nil
+    }
+
+    return nil, errors.New("token does not exist")
 }
