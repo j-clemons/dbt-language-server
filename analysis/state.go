@@ -56,9 +56,7 @@ func (s *State) refreshDbtContext(wd string) {
     s.DbtContext.VariableDetailMap = getProjectVariables(s.DbtContext.ProjectYaml, s.DbtContext.ProjectRoot)
 }
 
-func (s *State) OpenDocument(uri, text string) {
-    s.refreshDbtContext("")
-
+func (s *State) parseDocument(uri, text string) {
     parserIns := parser.Parse(text, s.DbtContext.Dialect)
     s.Documents[uri] = Document{
         Text:      text,
@@ -67,13 +65,13 @@ func (s *State) OpenDocument(uri, text string) {
     }
 }
 
+func (s *State) OpenDocument(uri, text string) {
+    s.refreshDbtContext("")
+    s.parseDocument(uri, text)
+}
+
 func (s *State) UpdateDocument(uri, text string) {
-    parserIns := parser.Parse(text, s.DbtContext.Dialect)
-    s.Documents[uri] = Document{
-        Text:      text,
-        Tokens:    parserIns.CreateTokenIndex(),
-        DefTokens: parserIns.CreateTokenNameMap(),
-    }
+    s.parseDocument(uri, text)
 }
 
 func (s *State) SaveDocument(uri string) {
