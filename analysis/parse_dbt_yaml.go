@@ -76,6 +76,7 @@ type DbtProjectYaml struct {
 	ProjectName         AnnotatedField[string]   `yaml:"name"`
     Profile             AnnotatedField[string]   `yaml:"profile"`
 	ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
+    SeedPaths           AnnotatedField[[]string] `yaml:"seed-paths"`
 	MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
 	PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`
 	DocsPaths           AnnotatedField[[]string] `yaml:"docs-paths"`
@@ -109,6 +110,11 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     if projYaml.ModelPaths.Value == nil || len(projYaml.ModelPaths.Value) == 0 {
         if availableDirs["models"] == 1 {
             projYaml.ModelPaths.Value = []string{"models"}
+        }
+    }
+    if projYaml.SeedPaths.Value == nil || len(projYaml.SeedPaths.Value) == 0 {
+        if availableDirs["seeds"] == 1 {
+            projYaml.SeedPaths.Value = []string{"seeds"}
         }
     }
     if projYaml.MacroPaths.Value == nil || len(projYaml.MacroPaths.Value) == 0 {

@@ -43,5 +43,15 @@ func getModelDetails(projectRoot string) map[string]ModelDetails {
             }
         }
     }
+
+    seedPathMap := createSeedPathMap(projectRoot, dbtProjectYaml)
+    for k, v := range seedPathMap {
+        modelMap[k] = ModelDetails{
+            URI:         v,
+            ProjectName: dbtProjectYaml.ProjectName.Value,
+            Description: "Seed File",
+        }
+    }
+
     return modelMap
 }

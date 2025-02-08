@@ -42,6 +42,13 @@ func expectedTestState() State {
                         Character:13,
                     },
                 },
+                SeedPaths:AnnotatedField[[]string]{
+                    Value:[]string{"seeds"},
+                    Position:lsp.Position{
+                        Line:8,
+                        Character:12,
+                    },
+                },
                 MacroPaths:AnnotatedField[[]string]{
                     Value:[]string{"macros"},
                     Position:lsp.Position{
@@ -97,39 +104,54 @@ func expectedTestState() State {
             },
             Dialect: docs.Dialect("duckdb"),
             ModelDetailMap:map[string] ModelDetails{
-                "customers": ModelDetails{
+                "customers": {
                     URI:filepath.Join(testdataRoot, "models/customers.sql"),
                     ProjectName:"jaffle_shop",
                     Description:"This table has basic information about a customer, as well as some derived facts based on a customer's orders",
                 },
-                "orders": ModelDetails{
+                "orders": {
                     URI:filepath.Join(testdataRoot, "models/orders.sql"),
                     ProjectName:"jaffle_shop",
                     Description:"This table has basic information about orders, as well as some derived facts based on payments",
                 },
-                "stg_customer_status": ModelDetails{
+                "stg_customer_status": {
                     URI:filepath.Join(testdataRoot, "dbt_packages/jaffle_package/models/stg_customer_status.sql"),
                     ProjectName:"jaffle_package",
                     Description:"",
                 },
-                "stg_customers": ModelDetails{
+                "stg_customers": {
                     URI:filepath.Join(testdataRoot, "models/staging/stg_customers.sql"),
                     ProjectName:"jaffle_shop",
                     Description:"",
                 },
-                "stg_orders": ModelDetails{
+                "stg_orders": {
                     URI:filepath.Join(testdataRoot, "models/staging/stg_orders.sql"),
                     ProjectName:"jaffle_shop",
                     Description:"",
                 },
-                "stg_payments": ModelDetails{
+                "stg_payments": {
                     URI:filepath.Join(testdataRoot, "models/staging/stg_payments.sql"),
                     ProjectName:"jaffle_shop",
                     Description:"",
                 },
+                "raw_customers": {
+                    URI:filepath.Join(testdataRoot, "seeds/raw_customers.csv"),
+                    ProjectName:"jaffle_shop",
+                    Description:"Seed File",
+                },
+                "raw_orders": {
+                    URI:filepath.Join(testdataRoot, "seeds/raw_orders.csv"),
+                    ProjectName:"jaffle_shop",
+                    Description:"Seed File",
+                },
+                "raw_payments": {
+                    URI:filepath.Join(testdataRoot, "seeds/raw_payments.csv"),
+                    ProjectName:"jaffle_shop",
+                    Description:"Seed File",
+                },
             },
             MacroDetailMap:map[string] Macro{
-                "add_values": Macro{
+                "add_values": {
                     Name:"add_values",
                     ProjectName:"jaffle_package",
                     Description:"add_values(arg1, arg2)",
@@ -145,7 +167,7 @@ func expectedTestState() State {
                         },
                     },
                 },
-                "full_name": Macro{
+                "full_name": {
                     Name:"full_name",
                     ProjectName:"jaffle_shop",
                     Description:"full_name(first_name, last_name)",
@@ -161,7 +183,7 @@ func expectedTestState() State {
                         },
                     },
                 },
-                "times_five": Macro{
+                "times_five": {
                     Name:"times_five",
                     ProjectName:"jaffle_shop",
                     Description:"times_five(int_value)",
@@ -179,7 +201,7 @@ func expectedTestState() State {
                 },
             },
             VariableDetailMap: map[string]Variable{
-                "global_count": Variable{
+                "global_count": {
                     Name:"global_count",
                     Value:0,
                     URI:filepath.Join(testdataRoot, "dbt_project.yml"),
@@ -194,7 +216,7 @@ func expectedTestState() State {
                         },
                     },
                 },
-                "jaffle_number": Variable{
+                "jaffle_number": {
                     Name:"jaffle_number",
                     Value:1,
                     URI:filepath.Join(testdataRoot, "dbt_project.yml"),
@@ -209,7 +231,7 @@ func expectedTestState() State {
                         },
                     },
                 },
-                "jaffle_string": Variable{
+                "jaffle_string": {
                     Name:"jaffle_string",
                     Value:"jaffle",
                     URI:filepath.Join(testdataRoot, "dbt_project.yml"),

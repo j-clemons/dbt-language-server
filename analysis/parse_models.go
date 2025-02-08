@@ -2,38 +2,22 @@ package analysis
 
 import (
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/j-clemons/dbt-language-server/util"
 )
 
-func createSqlFileNameMap(root string, paths []string) (map[string]string, error) {
-    sqlFileMap := make(map[string]string)
-
-    var err error
-
-    for _, p := range paths {
-        path := filepath.Join(root, p)
-        _, err = os.ReadDir(path)
-        if err != nil {
-            continue
-        }
-        validPaths, err := util.WalkFilepath(path, ".sql")
-        if err != nil {
-            continue
-        }
-
-        for _, validPath := range validPaths {
-            sqlFileMap[filepath.Base(validPath)[:len(filepath.Base(validPath)) - 4]] = validPath
-        }
+func createModelPathMap(projectRoot string, projYaml DbtProjectYaml) map[string]string {
+    files, err := util.CreateFileNameMap(".sql", projectRoot, projYaml.ModelPaths.Value)
+    if err != nil {
+        log.Print(err)
+        return nil
     }
 
-    return sqlFileMap, err
+    return files
 }
 
-func createModelPathMap(projectRoot string, projYaml DbtProjectYaml) map[string]string {
-    files, err := createSqlFileNameMap(projectRoot, projYaml.ModelPaths.Value)
+func createSeedPathMap(projectRoot string, projYaml DbtProjectYaml) map[string]string {
+    files, err := util.CreateFileNameMap(".csv", projectRoot, projYaml.SeedPaths.Value)
     if err != nil {
         log.Print(err)
         return nil
