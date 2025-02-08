@@ -73,6 +73,7 @@ func TestParseTokens(t *testing.T) {
 {{ var("my_var") }}
 {{ ex_macro(input) }}
 {{ package.my_macro(input) }}
+{{ source("source_name", "table_name") }}
 from {{ ref('users') }}`
 
     expected := []Token{
@@ -104,15 +105,28 @@ from {{ ref('users') }}`
         {Type: RPAREN, Literal: ")", Line: 3, Column: 25},
         {Type: DB_RBRACE, Literal: "}}", Line: 3, Column: 27},
 
-        {Type: FROM, Literal: "from", Line: 4, Column: 0},
-        {Type: DB_LBRACE, Literal: "{{", Line: 4, Column: 5},
-        {Type: REF, Literal: "ref", Line: 4, Column: 8},
-        {Type: LPAREN, Literal: "(", Line: 4, Column: 11},
-        {Type: SINGLE_QUOTE, Literal: "'", Line: 4, Column: 12},
-        {Type: REF, Literal: "users", Line: 4, Column: 13},
-        {Type: SINGLE_QUOTE, Literal: "'", Line: 4, Column: 18},
-        {Type: RPAREN, Literal: ")", Line: 4, Column: 19},
-        {Type: DB_RBRACE, Literal: "}}", Line: 4, Column: 21},
+        {Type: DB_LBRACE, Literal: "{{", Line: 4, Column: 0},
+        {Type: SOURCE, Literal: "source", Line: 4, Column: 3},
+        {Type: LPAREN, Literal: "(", Line: 4, Column: 9},
+        {Type: DOUBLE_QUOTE, Literal: "\"", Line: 4, Column: 10},
+        {Type: SOURCE, Literal: "source_name", Line: 4, Column: 11},
+        {Type: DOUBLE_QUOTE, Literal: "\"", Line: 4, Column: 22},
+        {Type: COMMA, Literal: ",", Line: 4, Column: 23},
+        {Type: DOUBLE_QUOTE, Literal: "\"", Line: 4, Column: 25},
+        {Type: SOURCE_TABLE, Literal: "table_name", Line: 4, Column: 26},
+        {Type: DOUBLE_QUOTE, Literal: "\"", Line: 4, Column: 36},
+        {Type: RPAREN, Literal: ")", Line: 4, Column: 37},
+        {Type: DB_RBRACE, Literal: "}}", Line: 4, Column: 39},
+
+        {Type: FROM, Literal: "from", Line: 5, Column: 0},
+        {Type: DB_LBRACE, Literal: "{{", Line: 5, Column: 5},
+        {Type: REF, Literal: "ref", Line: 5, Column: 8},
+        {Type: LPAREN, Literal: "(", Line: 5, Column: 11},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 5, Column: 12},
+        {Type: REF, Literal: "users", Line: 5, Column: 13},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 5, Column: 18},
+        {Type: RPAREN, Literal: ")", Line: 5, Column: 19},
+        {Type: DB_RBRACE, Literal: "}}", Line: 5, Column: 21},
     }
 
     p := Parse(input, docs.Dialect("snowflake"))

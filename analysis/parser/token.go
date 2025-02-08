@@ -52,6 +52,7 @@ const (
    REF               = "REF"
    VAR               = "VAR"
    SOURCE            = "SOURCE"
+   SOURCE_TABLE      = "SOURCE_TABLE"
    MACRO             = "MACRO"
    PACKAGE           = "PACKAGE"
 

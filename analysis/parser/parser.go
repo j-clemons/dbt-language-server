@@ -104,6 +104,33 @@ func (p *Parser) parseMacro() {
     }
 }
 
+func (p *Parser) parseSource() {
+    p.NextToken()
+    if p.curTok.Type == LPAREN {
+        p.incParenCount()
+        p.NextToken()
+        if p.curTok.Type == SINGLE_QUOTE || p.curTok.Type == DOUBLE_QUOTE {
+            p.NextToken()
+            if p.curTok.Type == IDENT {
+                p.curTok.Type = SOURCE
+                p.NextToken()
+                if p.curTok.Type == SINGLE_QUOTE || p.curTok.Type == DOUBLE_QUOTE {
+                    p.NextToken()
+                    if p.curTok.Type == COMMA {
+                        p.NextToken()
+                        if p.curTok.Type == SINGLE_QUOTE || p.curTok.Type == DOUBLE_QUOTE {
+                            p.NextToken()
+                            if p.curTok.Type == IDENT {
+                                p.curTok.Type = SOURCE_TABLE
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 func (p *Parser) incParenCount() {
     if p.ctes.Ind {
         p.ctes.ParenCount++
@@ -139,6 +166,8 @@ func (p *Parser) parseTokens() {
         case DB_LBRACE:
             p.NextToken()
             switch p.curTok.Type {
+                case SOURCE:
+                    p.parseSource()
                 case REF:
                     p.parseRef()
                 case VAR:
