@@ -41,7 +41,9 @@ func Parse(input string, dialect docs.Dialect) *Parser {
 }
 
 func (p *Parser) NextToken() Token {
-    p.tokens = append(p.tokens, p.curTok)
+    if p.curTok.Type != "" {
+        p.tokens = append(p.tokens, p.curTok)
+    }
 
     p.curTok = p.peekTok
     p.peekTok = p.l.NextToken()
@@ -63,41 +65,91 @@ func (p *Parser) parseWith() {
     }
 }
 
-func (p *Parser) parseTokens() []Token {
-    dbtToken := false
+func (p *Parser) parseRef() {
+    p.NextToken()
+    if p.curTok.Type == LPAREN {
+        p.incParenCount()
+        p.NextToken()
+        if p.curTok.Type == SINGLE_QUOTE || p.curTok.Type == DOUBLE_QUOTE {
+            p.NextToken()
+            if p.curTok.Type == IDENT {
+                p.curTok.Type = REF
+            }
+        }
+    }
+}
+
+func (p *Parser) parseVar() {
+    p.NextToken()
+    if p.curTok.Type == LPAREN {
+        p.incParenCount()
+        p.NextToken()
+        if p.curTok.Type == SINGLE_QUOTE || p.curTok.Type == DOUBLE_QUOTE {
+            p.NextToken()
+            if p.curTok.Type == IDENT {
+                p.curTok.Type = VAR
+            }
+        }
+    }
+}
+
+func (p *Parser) parseMacro() {
+    if p.peekTok.Type == DOT {
+        p.curTok.Type = PACKAGE
+        p.NextToken()
+        p.NextToken()
+    }
+    if p.curTok.Type == IDENT && p.peekTok.Type == LPAREN {
+        p.curTok.Type = MACRO
+    }
+}
+
+func (p *Parser) incParenCount() {
+    if p.ctes.Ind {
+        p.ctes.ParenCount++
+    }
+}
+
+func (p *Parser) decParenCount() {
+    if p.ctes.Ind {
+        p.ctes.ParenCount--
+    }
+}
+
+func (p *Parser) parseTokens() {
     for p.curTok.Type != EOF {
-        p.curTok.DbtToken = dbtToken
         switch p.curTok.Type {
         case WITH:
             p.parseWith()
         case LPAREN:
-            if p.ctes.Ind {
-                p.ctes.ParenCount++
-            }
+            p.incParenCount()
         case RPAREN:
-            if p.ctes.Ind {
-                p.ctes.ParenCount--
-
-                if p.ctes.ParenCount == 0 {
+            p.decParenCount()
+            if p.ctes.Ind && p.ctes.ParenCount == 0 {
+                p.NextToken()
+                if p.curTok.Type == COMMA {
                     p.NextToken()
-                    if p.curTok.Type == COMMA {
-                        p.NextToken()
-                        if p.curTok.Type == IDENT {
-                            p.ctes.Tokens = append(p.ctes.Tokens, p.curTok)
-                        }
-                    } else {
-                        p.ctes.Ind = false
+                    if p.curTok.Type == IDENT {
+                        p.ctes.Tokens = append(p.ctes.Tokens, p.curTok)
                     }
+                } else {
+                    p.ctes.Ind = false
                 }
             }
         case DB_LBRACE:
-            dbtToken = true
+            p.NextToken()
+            switch p.curTok.Type {
+                case REF:
+                    p.parseRef()
+                case VAR:
+                    p.parseVar()
+                case IDENT:
+                    p.parseMacro()
+            }
         case DB_RBRACE:
-            dbtToken = false
         }
         p.NextToken()
     }
-    return p.ctes.Tokens
 }
 
 func (p *Parser) CreateTokenNameMap() map[string]Token {

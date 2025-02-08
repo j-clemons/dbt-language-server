@@ -9,7 +9,6 @@ type Token struct {
     Literal  string
     Line     int
     Column   int
-    DbtToken bool
 }
 
 const (
@@ -39,6 +38,7 @@ const (
 
    COMMA             = ","
    SEMICOLON         = ";"
+   DOT               = "."
 
    LPAREN            = "("
    RPAREN            = ")"
@@ -52,6 +52,8 @@ const (
    REF               = "REF"
    VAR               = "VAR"
    SOURCE            = "SOURCE"
+   MACRO             = "MACRO"
+   PACKAGE           = "PACKAGE"
 
    //                keywords
    ACCOUNT           = "ACCOUNT"

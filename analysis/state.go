@@ -96,23 +96,21 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
 
     dialectFunctions := s.DbtContext.Dialect.FunctionDocs()
 
-    if cursorToken.DbtToken {
-        if s.DbtContext.ModelDetailMap[cursorToken.Literal].URI != "" {
-            response.Result.Contents = s.DbtContext.ModelDetailMap[cursorToken.Literal].Description
-        } else if s.DbtContext.MacroDetailMap[cursorToken.Literal].URI != "" {
-            response.Result.Contents = s.DbtContext.MacroDetailMap[cursorToken.Literal].Description
-        } else if s.DbtContext.VariableDetailMap[cursorToken.Literal].Name != "" {
-            response.Result.Contents = fmt.Sprintf(
-                "%v: %v",
-                cursorToken.Literal,
-                s.DbtContext.VariableDetailMap[cursorToken.Literal].Value,
-            )
-        }
-    } else {
-        if dialectFunctions[cursorToken.Literal] != "" {
-            response.Result.Contents = dialectFunctions[cursorToken.Literal]
-        }
+    switch cursorToken.Type {
+    case parser.REF:
+        response.Result.Contents = s.DbtContext.ModelDetailMap[cursorToken.Literal].Description
+    case parser.VAR:
+        response.Result.Contents = fmt.Sprintf(
+            "%v: %v",
+            cursorToken.Literal,
+            s.DbtContext.VariableDetailMap[cursorToken.Literal].Value,
+        )
+    case parser.MACRO:
+        response.Result.Contents = s.DbtContext.MacroDetailMap[cursorToken.Literal].Description
+    default:
+        response.Result.Contents = dialectFunctions[cursorToken.Literal]
     }
+
     return response
 }
 
@@ -142,16 +140,8 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         return response
     }
 
-    if cursorToken.DbtToken {
-        if s.DbtContext.MacroDetailMap[cursorToken.Literal].URI != "" {
-            response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorToken.Literal].URI
-            response.Result.Range = s.DbtContext.MacroDetailMap[cursorToken.Literal].Range
-        } else if s.DbtContext.VariableDetailMap[cursorToken.Literal].Name != "" {
-            response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorToken.Literal].URI
-            response.Result.Range = s.DbtContext.VariableDetailMap[cursorToken.Literal].Range
-        }
-    }
-    if s.DbtContext.ModelDetailMap[cursorToken.Literal].URI != "" {
+    switch cursorToken.Type {
+    case parser.REF:
         response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorToken.Literal].URI
         response.Result.Range = lsp.Range{
                 Start: lsp.Position{
@@ -163,7 +153,13 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
                     Character: 0,
                 },
         }
-    } else if s.Documents[uri].DefTokens[cursorToken.Literal].Literal != "" {
+    case parser.VAR:
+        response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorToken.Literal].URI
+        response.Result.Range = s.DbtContext.VariableDetailMap[cursorToken.Literal].Range
+    case parser.MACRO:
+        response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorToken.Literal].URI
+        response.Result.Range = s.DbtContext.MacroDetailMap[cursorToken.Literal].Range
+    default:
         response.Result.URI = uri
         line := s.Documents[uri].DefTokens[cursorToken.Literal].Line
         column := s.Documents[uri].DefTokens[cursorToken.Literal].Column
