@@ -12,7 +12,7 @@ type Parser struct {
     l       *Lexer
     curTok  Token
     peekTok Token
-    tokens  []Token
+    tokens  []TokenLL
     ctes    CTE
 }
 
@@ -21,6 +21,11 @@ type CTE struct {
     ParenCount   int
     Tokens       []Token
     TokenNameMap map[string]Token
+}
+
+type TokenLL struct {
+    Token     Token
+    PrevToken *TokenLL
 }
 
 func NewParser(input string, dialect docs.Dialect) *Parser {
@@ -42,7 +47,14 @@ func Parse(input string, dialect docs.Dialect) *Parser {
 
 func (p *Parser) NextToken() Token {
     if p.curTok.Type != "" {
-        p.tokens = append(p.tokens, p.curTok)
+        prevToken := (*TokenLL)(nil)
+        if len(p.tokens) > 0 {
+            prevToken = &p.tokens[len(p.tokens) - 1]
+        }
+        p.tokens = append(p.tokens, TokenLL{
+            Token:     p.curTok,
+            PrevToken: prevToken,
+        })
     }
 
     p.curTok = p.peekTok
@@ -190,22 +202,22 @@ func (p *Parser) CreateTokenNameMap() map[string]Token {
 }
 
 type TokenIndex struct {
-    lineTokens map[int][]Token
+    lineTokens map[int][]TokenLL
 }
 
 func (p *Parser) CreateTokenIndex() *TokenIndex {
     index := &TokenIndex{
-        lineTokens: make(map[int][]Token),
+        lineTokens: make(map[int][]TokenLL),
     }
 
-    for _, token := range p.tokens {
-        index.lineTokens[token.Line] = append(index.lineTokens[token.Line], token)
+    for _, t := range p.tokens {
+        index.lineTokens[t.Token.Line] = append(index.lineTokens[t.Token.Line], t)
     }
 
     return index
 }
 
-func (ti *TokenIndex) FindTokenAtCursor(line, column int) (*Token, error) {
+func (ti *TokenIndex) FindTokenAtCursor(line, column int) (*TokenLL, error) {
     lineTokens, exists := ti.lineTokens[line]
     if !exists {
         return nil, errors.New("line does not exist")
@@ -213,12 +225,12 @@ func (ti *TokenIndex) FindTokenAtCursor(line, column int) (*Token, error) {
 
     // Binary search to find the token
     idx := sort.Search(len(lineTokens), func(i int) bool {
-        return lineTokens[i].Column + len(lineTokens[i].Literal) > column
+        return lineTokens[i].Token.Column + len(lineTokens[i].Token.Literal) > column
     })
 
     if idx >= 0 &&
-       column >= lineTokens[idx].Column &&
-       column < lineTokens[idx].Column + len(lineTokens[idx].Literal) {
+       column >= lineTokens[idx].Token.Column &&
+       column < lineTokens[idx].Token.Column + len(lineTokens[idx].Token.Literal) {
         return &lineTokens[idx], nil
     }
 

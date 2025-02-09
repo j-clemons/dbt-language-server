@@ -133,7 +133,7 @@ from {{ ref('users') }}`
     tokens := p.tokens
 
     for i, expToken := range expected {
-        if expToken != tokens[i] {
+        if expToken != tokens[i].Token {
             t.Fatalf("tokens[%d] - expected=%v, got=%v",
                 i, expToken, tokens[i])
         }

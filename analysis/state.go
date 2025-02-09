@@ -89,10 +89,12 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
         },
     }
 
-    cursorToken, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
+    cursorTokenLL, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
     if err != nil {
         return response
     }
+
+    cursorToken := cursorTokenLL.Token
 
     dialectFunctions := s.DbtContext.Dialect.FunctionDocs()
 
@@ -135,10 +137,12 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         },
 	}
 
-    cursorToken, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
+    cursorTokenLL, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
     if err != nil {
         return response
     }
+
+    cursorToken := cursorTokenLL.Token
 
     switch cursorToken.Type {
     case parser.REF:
