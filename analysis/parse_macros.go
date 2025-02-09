@@ -11,7 +11,7 @@ import (
 
 type Macro struct {
     Name        string
-    ProjectName string
+    ProjectName Package
     Description string
     URI         string
     Range       lsp.Range
@@ -33,7 +33,7 @@ func getMacrosFromFile(fileStr string, fileUri string, dbtProjectYaml DbtProject
             macros,
             Macro{
                 Name:        fileStr[m[2]:m[3]][:macroNameIdx],
-                ProjectName: dbtProjectYaml.ProjectName.Value,
+                ProjectName: Package(dbtProjectYaml.ProjectName.Value),
                 Description: fileStr[m[2]:m[3]],
                 URI:         fileUri,
                 Range:       lsp.Range{

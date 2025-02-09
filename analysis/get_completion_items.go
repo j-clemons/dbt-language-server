@@ -56,28 +56,30 @@ func getReferenceSuffix(ref string, trailingStr string) string {
     return suffix
 }
 
-func getMacroCompletionItems(macroMap map[string]Macro, ProjectYaml DbtProjectYaml) []lsp.CompletionItem {
-    items := make([]lsp.CompletionItem, 0, len(macroMap))
+func getMacroCompletionItems(packageMacroMap map[Package]map[string]Macro, ProjectYaml DbtProjectYaml) []lsp.CompletionItem {
+    items := make([]lsp.CompletionItem, 0, len(packageMacroMap))
 
-    for k := range macroMap {
-        var insertText string
-        if ProjectYaml.ProjectName.Value == macroMap[k].ProjectName {
-            insertText = k
-        } else {
-            insertText = fmt.Sprintf("%s.%s", macroMap[k].ProjectName, k)
+    for _, macroMap := range packageMacroMap {
+        for k := range macroMap {
+            var insertText string
+            if ProjectYaml.ProjectName.Value == string(macroMap[k].ProjectName) {
+                insertText = k
+            } else {
+                insertText = fmt.Sprintf("%s.%s", macroMap[k].ProjectName, k)
+            }
+
+            items = append(
+                items,
+                lsp.CompletionItem{
+                    Label:         k,
+                    Detail:        fmt.Sprintf("Project: %s", macroMap[k].ProjectName),
+                    Documentation: macroMap[k].Description,
+                    Kind:          completionKind.Snippet,
+                    InsertText:    insertText,
+                    SortText:      k,
+                },
+            )
         }
-
-        items = append(
-            items,
-            lsp.CompletionItem{
-                Label:         k,
-                Detail:        fmt.Sprintf("Project: %s", macroMap[k].ProjectName),
-                Documentation: macroMap[k].Description,
-                Kind:          completionKind.Snippet,
-                InsertText:    insertText,
-                SortText:      k,
-            },
-        )
     }
 
     return items

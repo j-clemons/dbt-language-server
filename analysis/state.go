@@ -27,7 +27,7 @@ type DbtContext struct {
     ProjectYaml       DbtProjectYaml
     Dialect           docs.Dialect
     ModelDetailMap    map[string]ModelDetails
-    MacroDetailMap    map[string]Macro
+    MacroDetailMap    map[Package]map[string]Macro
     VariableDetailMap map[string]Variable
 }
 
@@ -39,7 +39,7 @@ func NewState() State {
             ProjectYaml:       DbtProjectYaml{},
             Dialect:           "",
             ModelDetailMap:    map[string]ModelDetails{},
-            MacroDetailMap:    map[string]Macro{},
+            MacroDetailMap:    map[Package]map[string]Macro{},
             VariableDetailMap: map[string]Variable{},
         },
     }
@@ -108,7 +108,12 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
             s.DbtContext.VariableDetailMap[cursorToken.Literal].Value,
         )
     case parser.MACRO:
-        response.Result.Contents = s.DbtContext.MacroDetailMap[cursorToken.Literal].Description
+        packageName := Package(s.DbtContext.ProjectYaml.ProjectName.Value)
+        prevToken := cursorTokenLL.PrevToken.PrevToken
+        if prevToken.Token.Type == parser.PACKAGE {
+            packageName = Package(prevToken.Token.Literal)
+        }
+        response.Result.Contents = s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal].Description
     default:
         response.Result.Contents = dialectFunctions[cursorToken.Literal]
     }
@@ -161,8 +166,13 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorToken.Literal].URI
         response.Result.Range = s.DbtContext.VariableDetailMap[cursorToken.Literal].Range
     case parser.MACRO:
-        response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[cursorToken.Literal].URI
-        response.Result.Range = s.DbtContext.MacroDetailMap[cursorToken.Literal].Range
+        packageName := Package(s.DbtContext.ProjectYaml.ProjectName.Value)
+        prevToken := cursorTokenLL.PrevToken.PrevToken
+        if prevToken.Token.Type == parser.PACKAGE {
+            packageName = Package(prevToken.Token.Literal)
+        }
+        response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal].URI
+        response.Result.Range = s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal].Range
     default:
         response.Result.URI = uri
         line := s.Documents[uri].DefTokens[cursorToken.Literal].Line

@@ -1,7 +1,9 @@
 package analysis
 
-func getMacroDetails(projectRoot string) map[string]Macro {
-    macroMap := make(map[string]Macro)
+type Package string
+
+func getMacroDetails(projectRoot string) map[Package]map[string]Macro {
+    packageMacroMap := make(map[Package]map[string]Macro)
 
     dbtProjectYaml := parseDbtProjectYaml(projectRoot)
     packageDetails := getPackageMacroDetails(projectRoot, dbtProjectYaml)
@@ -23,8 +25,11 @@ func getMacroDetails(projectRoot string) map[string]Macro {
         }
 
         for _, m := range macros {
-            macroMap[m.Name] = m
+            if packageMacroMap[m.ProjectName] == nil {
+                packageMacroMap[m.ProjectName] = make(map[string]Macro)
+            }
+            packageMacroMap[m.ProjectName][m.Name] = m
         }
     }
-    return macroMap
+    return packageMacroMap
 }

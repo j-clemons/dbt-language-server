@@ -150,52 +150,56 @@ func expectedTestState() State {
                     Description:"Seed File",
                 },
             },
-            MacroDetailMap:map[string] Macro{
-                "add_values": {
-                    Name:"add_values",
-                    ProjectName:"jaffle_package",
-                    Description:"add_values(arg1, arg2)",
-                    URI:filepath.Join(testdataRoot, "dbt_packages/jaffle_package/macros/jaffle_package_macros.sql"),
-                    Range:lsp.Range{
-                        Start:lsp.Position{
-                            Line:0,
-                            Character:9,
-                        },
-                        End:lsp.Position{
-                            Line:0,
-                            Character:31,
-                        },
-                    },
-                },
-                "full_name": {
-                    Name:"full_name",
-                    ProjectName:"jaffle_shop",
-                    Description:"full_name(first_name, last_name)",
-                    URI:filepath.Join(testdataRoot, "macros/jaffle_macros.sql"),
-                    Range:lsp.Range{
-                        Start:lsp.Position{
-                            Line:0,
-                            Character:9,
-                        },
-                        End:lsp.Position{
-                            Line:0,
-                            Character:41,
+            MacroDetailMap:map[Package]map[string]Macro{
+                "jaffle_package":{
+                    "add_values": {
+                        Name:"add_values",
+                        ProjectName:"jaffle_package",
+                        Description:"add_values(arg1, arg2)",
+                        URI:filepath.Join(testdataRoot, "dbt_packages/jaffle_package/macros/jaffle_package_macros.sql"),
+                        Range:lsp.Range{
+                            Start:lsp.Position{
+                                Line:0,
+                                Character:9,
+                            },
+                            End:lsp.Position{
+                                Line:0,
+                                Character:31,
+                            },
                         },
                     },
                 },
-                "times_five": {
-                    Name:"times_five",
-                    ProjectName:"jaffle_shop",
-                    Description:"times_five(int_value)",
-                    URI:filepath.Join(testdataRoot, "macros/jaffle_macros.sql"),
-                    Range:lsp.Range{
-                        Start:lsp.Position{
-                            Line:6,
-                            Character:10,
+                "jaffle_shop":{
+                    "full_name": {
+                        Name:"full_name",
+                        ProjectName:"jaffle_shop",
+                        Description:"full_name(first_name, last_name)",
+                        URI:filepath.Join(testdataRoot, "macros/jaffle_macros.sql"),
+                        Range:lsp.Range{
+                            Start:lsp.Position{
+                                Line:0,
+                                Character:9,
+                            },
+                            End:lsp.Position{
+                                Line:0,
+                                Character:41,
+                            },
                         },
-                        End:lsp.Position{
-                            Line:6,
-                            Character:31,
+                    },
+                    "times_five": {
+                        Name:"times_five",
+                        ProjectName:"jaffle_shop",
+                        Description:"times_five(int_value)",
+                        URI:filepath.Join(testdataRoot, "macros/jaffle_macros.sql"),
+                        Range:lsp.Range{
+                            Start:lsp.Position{
+                                Line:6,
+                                Character:10,
+                            },
+                            End:lsp.Position{
+                                Line:6,
+                                Character:31,
+                            },
                         },
                     },
                 },
