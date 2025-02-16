@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/j-clemons/dbt-language-server/lsp"
@@ -169,6 +170,14 @@ func TestGetMacroCompletionItems(t *testing.T) {
             SortText:      "times_five",
         },
     }
+
+    sort.Slice(actualCompletionItems, func(i, j int) bool {
+        return actualCompletionItems[i].Label < actualCompletionItems[j].Label
+    })
+
+    sort.Slice(expectedCompletionItems, func(i, j int) bool {
+        return expectedCompletionItems[i].Label < expectedCompletionItems[j].Label
+    })
 
     if !reflect.DeepEqual(actualCompletionItems, expectedCompletionItems) {
         t.Fatalf("expected %v,\n\ngot %v", expectedCompletionItems, actualCompletionItems)
