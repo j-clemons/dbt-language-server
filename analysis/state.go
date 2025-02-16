@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/j-clemons/dbt-language-server/analysis/parser"
 	"github.com/j-clemons/dbt-language-server/docs"
@@ -51,9 +52,33 @@ func (s *State) refreshDbtContext(wd string) {
     s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
     s.DbtContext.Dialect = util.GetDialect(s.DbtContext.ProjectYaml.Profile.Value, wd)
 
-    s.DbtContext.ModelDetailMap = getModelDetails(s.DbtContext.ProjectRoot)
-    s.DbtContext.MacroDetailMap = getMacroDetails(s.DbtContext.ProjectRoot)
-    s.DbtContext.VariableDetailMap = getProjectVariables(s.DbtContext.ProjectYaml, s.DbtContext.ProjectRoot)
+    var wg sync.WaitGroup
+    wg.Add(3)
+
+    var modelMap map[string]ModelDetails
+    var macroMap map[Package]map[string]Macro
+    var varMap   map[string]Variable
+
+    go func() {
+        defer wg.Done()
+        modelMap = s.getModelDetails()
+    }()
+
+    go func() {
+        defer wg.Done()
+        macroMap = s.getMacroDetails()
+    }()
+
+    go func() {
+        defer wg.Done()
+        varMap = s.getProjectVariables()
+    }()
+
+    wg.Wait()
+
+    s.DbtContext.ModelDetailMap = modelMap
+    s.DbtContext.MacroDetailMap = macroMap
+    s.DbtContext.VariableDetailMap = varMap
 }
 
 func (s *State) parseDocument(uri, text string) {

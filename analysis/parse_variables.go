@@ -13,17 +13,17 @@ type Variable struct {
     Range lsp.Range
 }
 
-func getProjectVariables(dbtProjectYaml DbtProjectYaml, projectRoot string) map[string]Variable {
+func (s *State) getProjectVariables() map[string]Variable {
     vars := make(map[string]Variable)
 
-    if dbtProjectYaml.Vars == nil {
+    if s.DbtContext.ProjectYaml.Vars == nil {
         return vars
     }
 
-    projectUri := filepath.Join(projectRoot, "dbt_project.yml")
+    projectUri := filepath.Join(s.DbtContext.ProjectRoot, "dbt_project.yml")
 
-    for k, v := range dbtProjectYaml.Vars {
-        if k != dbtProjectYaml.ProjectName.Value {
+    for k, v := range s.DbtContext.ProjectYaml.Vars {
+        if k != s.DbtContext.ProjectYaml.ProjectName.Value {
            vars[k] = Variable{
                Name:  k,
                Value: v.Value,
@@ -36,7 +36,7 @@ func getProjectVariables(dbtProjectYaml DbtProjectYaml, projectRoot string) map[
         }
     }
 
-    projectVars, ok := dbtProjectYaml.Vars[dbtProjectYaml.ProjectName.Value].Value.(AnnotatedMap)
+    projectVars, ok := s.DbtContext.ProjectYaml.Vars[s.DbtContext.ProjectYaml.ProjectName.Value].Value.(AnnotatedMap)
     if !ok {
         return vars
     }

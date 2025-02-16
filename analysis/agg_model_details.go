@@ -11,16 +11,15 @@ type ProjectDetails struct {
     DbtProjectYaml DbtProjectYaml
 }
 
-func getModelDetails(projectRoot string) map[string]ModelDetails {
+func (s *State) getModelDetails() map[string]ModelDetails {
     modelMap := make(map[string]ModelDetails)
 
-    dbtProjectYaml := parseDbtProjectYaml(projectRoot)
-    packageDetails := getPackageModelDetails(projectRoot, dbtProjectYaml)
+    packageDetails := getPackageModelDetails(s.DbtContext.ProjectRoot, s.DbtContext.ProjectYaml)
 
     processList := []ProjectDetails{
         {
-            RootPath: projectRoot,
-            DbtProjectYaml: dbtProjectYaml,
+            RootPath:       s.DbtContext.ProjectRoot,
+            DbtProjectYaml: s.DbtContext.ProjectYaml,
         },
     }
     processList = append(processList, packageDetails...)
@@ -44,11 +43,11 @@ func getModelDetails(projectRoot string) map[string]ModelDetails {
         }
     }
 
-    seedPathMap := createSeedPathMap(projectRoot, dbtProjectYaml)
+    seedPathMap := createSeedPathMap(s.DbtContext.ProjectRoot, s.DbtContext.ProjectYaml)
     for k, v := range seedPathMap {
         modelMap[k] = ModelDetails{
             URI:         v,
-            ProjectName: dbtProjectYaml.ProjectName.Value,
+            ProjectName: s.DbtContext.ProjectYaml.ProjectName.Value,
             Description: "Seed File",
         }
     }

@@ -2,18 +2,16 @@ package analysis
 
 type Package string
 
-func getMacroDetails(projectRoot string) map[Package]map[string]Macro {
+func (s *State) getMacroDetails() map[Package]map[string]Macro {
     packageMacroMap := make(map[Package]map[string]Macro)
-
-    dbtProjectYaml := parseDbtProjectYaml(projectRoot)
-    packageDetails := getPackageMacroDetails(projectRoot, dbtProjectYaml)
+    packageDetails := getPackageMacroDetails(s.DbtContext.ProjectRoot, s.DbtContext.ProjectYaml)
 
     processList := []ProjectDetails{}
     processList = append(
         processList,
         ProjectDetails{
-            RootPath: projectRoot,
-            DbtProjectYaml: dbtProjectYaml,
+            RootPath:       s.DbtContext.ProjectRoot,
+            DbtProjectYaml: s.DbtContext.ProjectYaml,
         },
     )
     processList = append(processList, packageDetails...)
@@ -31,5 +29,6 @@ func getMacroDetails(projectRoot string) map[Package]map[string]Macro {
             packageMacroMap[m.ProjectName][m.Name] = m
         }
     }
+
     return packageMacroMap
 }
