@@ -176,8 +176,10 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 
     switch cursorToken.Type {
     case parser.REF:
-        response.Result.URI = "file://" + s.DbtContext.ModelDetailMap[cursorToken.Literal].URI
-        response.Result.Range = lsp.Range{
+        model := s.DbtContext.ModelDetailMap[cursorToken.Literal]
+        if model != (ModelDetails{}) {
+            response.Result.URI = "file://" + model.URI
+            response.Result.Range = lsp.Range{
                 Start: lsp.Position{
                     Line:      0,
                     Character: 0,
@@ -186,31 +188,39 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
                     Line:      0,
                     Character: 0,
                 },
+            }
         }
     case parser.VAR:
-        response.Result.URI = "file://" + s.DbtContext.VariableDetailMap[cursorToken.Literal].URI
-        response.Result.Range = s.DbtContext.VariableDetailMap[cursorToken.Literal].Range
+        variable := s.DbtContext.VariableDetailMap[cursorToken.Literal]
+        if variable != (Variable{}) {
+            response.Result.URI = "file://" + variable.URI
+            response.Result.Range = variable.Range
+        }
     case parser.MACRO:
         packageName := Package(s.DbtContext.ProjectYaml.ProjectName.Value)
         prevToken := cursorTokenLL.PrevToken.PrevToken
         if prevToken.Token.Type == parser.PACKAGE {
             packageName = Package(prevToken.Token.Literal)
         }
-        response.Result.URI = "file://" + s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal].URI
-        response.Result.Range = s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal].Range
+        macro := s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal]
+        if macro != (Macro{}) {
+            response.Result.URI = "file://" + macro.URI
+            response.Result.Range = macro.Range
+        }
     default:
         response.Result.URI = uri
-        line := s.Documents[uri].DefTokens[cursorToken.Literal].Line
-        column := s.Documents[uri].DefTokens[cursorToken.Literal].Column
-        response.Result.Range = lsp.Range{
-            Start: lsp.Position{
-                Line:      line,
-                Character: column,
-            },
-            End: lsp.Position{
-                Line:      line,
-                Character: column,
-            },
+        defToken := s.Documents[uri].DefTokens[cursorToken.Literal]
+        if defToken != (parser.Token{}) {
+            response.Result.Range = lsp.Range{
+                Start: lsp.Position{
+                    Line:      defToken.Line,
+                    Character: defToken.Column,
+                },
+                End: lsp.Position{
+                    Line:      defToken.Line,
+                    Character: defToken.Column,
+                },
+            }
         }
     }
 
