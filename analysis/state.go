@@ -130,6 +130,16 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
     switch cursorToken.Type {
     case parser.REF:
         response.Result.Contents = s.DbtContext.ModelDetailMap[cursorToken.Literal].Description
+    case parser.SOURCE:
+        response.Result.Contents = s.DbtContext.SourceDetailMap[cursorToken.Literal].Description
+    case parser.SOURCE_TABLE:
+        prevToken := cursorTokenLL.PrevToken
+        for i := 0; i < 3; i++ {
+           prevToken = prevToken.PrevToken
+        }
+        if prevToken.Token.Type == parser.SOURCE {
+            response.Result.Contents = s.DbtContext.SourceDetailMap[prevToken.Token.Literal].Tables[cursorToken.Literal].Description
+        }
     case parser.VAR:
         response.Result.Contents = fmt.Sprintf(
             "%v: %v",
@@ -192,6 +202,24 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
                     Line:      0,
                     Character: 0,
                 },
+            }
+        }
+    case parser.SOURCE:
+        source := s.DbtContext.SourceDetailMap[cursorToken.Literal]
+        if source.Name != "" {
+            response.Result.URI = "file://" + source.URI
+            response.Result.Range = source.Range
+        }
+    case parser.SOURCE_TABLE:
+        prevToken := cursorTokenLL.PrevToken
+        for i := 0; i < 3; i++ {
+           prevToken = prevToken.PrevToken
+        }
+        if prevToken.Token.Type == parser.SOURCE {
+            source := s.DbtContext.SourceDetailMap[prevToken.Token.Literal].Tables[cursorToken.Literal]
+            if source.Name != "" {
+                response.Result.URI = "file://" + source.URI
+                response.Result.Range = source.Range
             }
         }
     case parser.VAR:
