@@ -28,6 +28,7 @@ type DbtContext struct {
     ProjectYaml       DbtProjectYaml
     Dialect           docs.Dialect
     ModelDetailMap    map[string]ModelDetails
+    SourceDetailMap   map[string]Source
     MacroDetailMap    map[Package]map[string]Macro
     VariableDetailMap map[string]Variable
 }
@@ -40,6 +41,7 @@ func NewState() State {
             ProjectYaml:       DbtProjectYaml{},
             Dialect:           "",
             ModelDetailMap:    map[string]ModelDetails{},
+            SourceDetailMap:   map[string]Source{},
             MacroDetailMap:    map[Package]map[string]Macro{},
             VariableDetailMap: map[string]Variable{},
         },
@@ -55,13 +57,14 @@ func (s *State) refreshDbtContext(wd string) {
     var wg sync.WaitGroup
     wg.Add(3)
 
-    var modelMap map[string]ModelDetails
-    var macroMap map[Package]map[string]Macro
-    var varMap   map[string]Variable
+    var modelMap  map[string]ModelDetails
+    var sourceMap map[string]Source
+    var macroMap  map[Package]map[string]Macro
+    var varMap    map[string]Variable
 
     go func() {
         defer wg.Done()
-        modelMap = s.getModelDetails()
+        modelMap, sourceMap = s.getModelDetails()
     }()
 
     go func() {
@@ -77,6 +80,7 @@ func (s *State) refreshDbtContext(wd string) {
     wg.Wait()
 
     s.DbtContext.ModelDetailMap = modelMap
+    s.DbtContext.SourceDetailMap = sourceMap
     s.DbtContext.MacroDetailMap = macroMap
     s.DbtContext.VariableDetailMap = varMap
 }

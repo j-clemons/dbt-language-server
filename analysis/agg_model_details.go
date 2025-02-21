@@ -11,8 +11,9 @@ type ProjectDetails struct {
     DbtProjectYaml DbtProjectYaml
 }
 
-func (s *State) getModelDetails() map[string]ModelDetails {
+func (s *State) getModelDetails() (map[string]ModelDetails, map[string]Source) {
     modelMap := make(map[string]ModelDetails)
+    sourceMap := make(map[string]Source)
 
     packageDetails := getPackageModelDetails(s.DbtContext.ProjectRoot, s.DbtContext.ProjectYaml)
 
@@ -26,11 +27,15 @@ func (s *State) getModelDetails() map[string]ModelDetails {
 
     for _, p := range processList {
         modelPathMap := createModelPathMap(p.RootPath, p.DbtProjectYaml)
-        schemaDetails := parseYamlModels(p.RootPath, p.DbtProjectYaml)
+        modelSchemaDetails, projectSourceMap := parseYamlModels(p.RootPath, p.DbtProjectYaml)
+
+        for k, v := range projectSourceMap {
+            sourceMap[k] = v
+        }
 
         for k, v := range modelPathMap {
             modelMapKey := k
-            alias, ok := schemaDetails[k].ModelConfig["alias"].Value.(string)
+            alias, ok := modelSchemaDetails[k].ModelConfig["alias"].Value.(string)
             if ok && alias != "" {
                 modelMapKey = alias
             }
@@ -38,7 +43,7 @@ func (s *State) getModelDetails() map[string]ModelDetails {
             modelMap[modelMapKey] = ModelDetails{
                 URI:         v,
                 ProjectName: p.DbtProjectYaml.ProjectName.Value,
-                Description: schemaDetails[k].Description.Value,
+                Description: modelSchemaDetails[k].Description.Value,
             }
         }
     }
@@ -52,5 +57,5 @@ func (s *State) getModelDetails() map[string]ModelDetails {
         }
     }
 
-    return modelMap
+    return modelMap, sourceMap
 }

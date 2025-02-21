@@ -150,6 +150,60 @@ func expectedTestState() State {
                     Description:"Seed File",
                 },
             },
+            SourceDetailMap:map[string]Source{
+                "jaffle_shop":{
+                    Name:"jaffle_shop",
+                    Description:"",
+                    URI:filepath.Join(testdataRoot, "models/schema.yml"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{Line:84, Character:10},
+                        End:lsp.Position{Line:84, Character:10},
+                    },
+                    Tables:map[string]SourceTable{
+                        "customers":{
+                            Name:"customers",
+                            Description:"",
+                            Table:"jaffle_shop",
+                            URI:filepath.Join(testdataRoot, "models/schema.yml"),
+                            Range:lsp.Range{
+                                Start:lsp.Position{Line:89, Character:14},
+                                End:lsp.Position{Line:89, Character:14},
+                            },
+                        },
+                        "orders":{
+                            Name:"orders",
+                            Description:"",
+                            Table:"jaffle_shop",
+                            URI:filepath.Join(testdataRoot, "models/schema.yml"),
+                            Range:lsp.Range{
+                                Start:lsp.Position{Line:88, Character:14},
+                                End:lsp.Position{Line:88, Character:14},
+                            },
+                        },
+                    },
+                },
+                "stripe":{
+                    Name:"stripe",
+                    Description:"",
+                    URI:filepath.Join(testdataRoot, "models/schema.yml"),
+                    Range:lsp.Range{
+                        Start:lsp.Position{Line:91, Character:10},
+                        End:lsp.Position{Line:91, Character:10},
+                    },
+                    Tables:map[string]SourceTable{
+                        "payments":{
+                            Name:"payments",
+                            Description:"",
+                            Table:"stripe",
+                            URI:filepath.Join(testdataRoot, "models/schema.yml"),
+                            Range:lsp.Range{
+                                Start:lsp.Position{Line:93, Character:14},
+                                End:lsp.Position{Line:93, Character:14},
+                            },
+                        },
+                    },
+                },
+            },
             MacroDetailMap:map[Package]map[string]Macro{
                 "jaffle_package":{
                     "add_values": {

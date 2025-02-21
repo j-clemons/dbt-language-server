@@ -137,37 +137,67 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
     return projYaml
 }
 
-type SchemaYaml struct {
-    Models []Model `yaml:"models"`
+type PropertiesYaml struct {
+    Models  []ModelProperties  `yaml:"models"`
+    Sources []SourceProperties `yaml:"sources"`
 }
 
-type Model struct {
+type ModelProperties struct {
     Name        AnnotatedField[string] `yaml:"name"`
     Description AnnotatedField[string] `yaml:"description"`
     ModelConfig AnnotatedMap           `yaml:"config"`
 }
 
+type SourceProperties struct {
+    Name        AnnotatedField[string]  `yaml:"name"`
+    Database    AnnotatedField[string]  `yaml:"database"`
+    Schema      AnnotatedField[string]  `yaml:"schema"`
+    Description AnnotatedField[string]  `yaml:"description"`
+    Tables      []SourceTableProperties `yaml:"tables"`
+}
 
-func parseSchemaYamlFile(path string) SchemaYaml {
+type SourceTableProperties struct {
+    Name        AnnotatedField[string] `yaml:"name"`
+    Description AnnotatedField[string] `yaml:"description"`
+}
+
+func parsePropertiesYamlFile(path string) PropertiesYaml {
     file, err := os.Open(path)
 	if err != nil {
 		fmt.Printf("Error opening file: %v\n", err)
-        return SchemaYaml{}
+        return PropertiesYaml{}
 
 	}
 	defer file.Close()
 
-	var config SchemaYaml
+	var config PropertiesYaml
 	decoder := yaml.NewDecoder(file)
 	if err := decoder.Decode(&config); err != nil {
 		fmt.Printf("Error decoding YAML: %v\n", err)
-        return SchemaYaml{}
+        return PropertiesYaml{}
 	}
     return config
 }
 
-func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Model {
-    modelMap := make(map[string]Model)
+type Source struct {
+    Name        string
+    Description string
+    URI         string
+    Range       lsp.Range
+    Tables      map[string]SourceTable
+}
+
+type SourceTable struct {
+    Name        string
+    Description string
+    Table       string
+    URI         string
+    Range       lsp.Range
+}
+
+func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) (map[string]ModelProperties, map[string]Source) {
+    modelMap := make(map[string]ModelProperties)
+    sourceMap := make(map[string]Source)
 
     docsFiles := getDocsFiles(projYaml)
     docsMap := processDocsFiles(docsFiles)
@@ -179,9 +209,9 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
         }
         files, _ := util.WalkFilepath(projectRoot+"/"+path+"/", ".yml")
         for _, file := range files {
-            dbtYml := parseSchemaYamlFile(file)
+            dbtYml := parsePropertiesYamlFile(file)
             for _, model := range dbtYml.Models {
-                modelMap[model.Name.Value] = Model{
+                modelMap[model.Name.Value] = ModelProperties{
                     Name:        model.Name,
                     Description: AnnotatedField[string]{Value: replaceDescriptionDocsBlocks(model.Description.Value, docsMap)},
                     ModelConfig: AnnotatedMap{
@@ -195,10 +225,41 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) map[string]Mod
                     },
                 }
             }
+
+            for _, source := range dbtYml.Sources {
+                sourceMap[source.Name.Value] = Source{
+                    Name:        source.Name.Value,
+                    Description: replaceDescriptionDocsBlocks(source.Description.Value, docsMap),
+                    URI:         file,
+                    Range: lsp.Range{
+                        Start: source.Name.Position,
+                        End:   source.Name.Position,
+                    },
+                }
+
+                if sourceMap[source.Name.Value].Tables == nil {
+                    tmpSM := sourceMap[source.Name.Value]
+                    tmpSM.Tables = make(map[string]SourceTable)
+                    sourceMap[source.Name.Value] = tmpSM
+                }
+
+                for _, table := range source.Tables {
+                    sourceMap[source.Name.Value].Tables[table.Name.Value] = SourceTable{
+                        Name:        table.Name.Value,
+                        Description: replaceDescriptionDocsBlocks(table.Description.Value, docsMap),
+                        Table:       source.Name.Value,
+                        URI:         file,
+                        Range: lsp.Range{
+                            Start: table.Name.Position,
+                            End:   table.Name.Position,
+                        },
+                    }
+                }
+            }
         }
     }
 
-    return modelMap
+    return modelMap, sourceMap
 }
 
 func replaceDescriptionDocsBlocks(description string, docsMap map[string]Docs) string {
