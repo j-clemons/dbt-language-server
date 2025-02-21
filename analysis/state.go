@@ -277,12 +277,12 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     if refRegex.MatchString(textBeforeCursor) {
         items = getRefCompletionItems(
             s.DbtContext.ModelDetailMap,
-            getReferenceSuffix(lineText, textAfterCursor),
+            getSuffix(lineText, textAfterCursor, "ref"),
         )
     } else if varRegex.MatchString(textBeforeCursor) {
         items = getVariableCompletionItems(
             s.DbtContext.VariableDetailMap,
-            getVariableSuffix(textBeforeCursor, textAfterCursor),
+            getSuffix(lineText, textAfterCursor, "var"),
         )
     } else if jinjaBlockRegex.MatchString(textBeforeCursor) {
         items = getMacroCompletionItems(s.DbtContext.MacroDetailMap, s.DbtContext.ProjectYaml)

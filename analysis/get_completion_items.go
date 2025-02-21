@@ -45,13 +45,13 @@ func reverseRefPrefix(str string) string {
     return result
 }
 
-func getReferenceSuffix(ref string, trailingStr string) string {
+func getSuffix(leadingStr string, trailingStr string, suffixType string) string {
     if trailingStr != "" {
         return ""
     }
-    leadingSymbols := regexp.MustCompile(`{{\s*ref\(('|")`)
-    prefix := leadingSymbols.FindString(ref)
-    suffix := reverseRefPrefix(strings.Replace(prefix, "ref", "", 1))
+    leadingSymbols := regexp.MustCompile(`{{\s*` + suffixType + `\(('|")`)
+    prefix := leadingSymbols.FindString(leadingStr)
+    suffix := reverseRefPrefix(strings.Replace(prefix, suffixType, "", 1))
 
     return suffix
 }
@@ -83,17 +83,6 @@ func getMacroCompletionItems(packageMacroMap map[Package]map[string]Macro, Proje
     }
 
     return items
-}
-
-func getVariableSuffix(vars string, trailingStr string) string {
-    if trailingStr != "" {
-        return ""
-    }
-    leadingSymbols := regexp.MustCompile(`{{\s*var\(('|")`)
-    prefix := leadingSymbols.FindString(vars)
-    suffix := reverseRefPrefix(strings.Replace(prefix, "var", "", 1))
-
-    return suffix
 }
 
 func getVariableCompletionItems(variables map[string]Variable, suffix string) []lsp.CompletionItem {

@@ -83,7 +83,7 @@ func TestGetReferenceSuffix(t *testing.T) {
 
     for _, tc := range testCases {
         t.Run(tc.name, func(t *testing.T) {
-            result := getReferenceSuffix(tc.ref, tc.trailing)
+            result := getSuffix(tc.ref, tc.trailing, "ref")
             if result != tc.expected {
                 t.Errorf("input: %s, %s; got: %s; want: %s",
                     tc.ref, tc.trailing, result, tc.expected)
@@ -127,7 +127,7 @@ func TestGetVariableSuffix(t *testing.T) {
 
     for _, tc := range testCases {
         t.Run(tc.name, func(t *testing.T) {
-            result := getVariableSuffix(tc.vars, tc.trailing)
+            result := getSuffix(tc.vars, tc.trailing, "var")
             if result != tc.expected {
                 t.Errorf("input: %s, %s; got: %s; want: %s",
                     tc.vars, tc.trailing, result, tc.expected)
