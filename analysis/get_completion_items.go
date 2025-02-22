@@ -56,6 +56,16 @@ func getSuffix(leadingStr string, trailingStr string, suffixType string) string 
     return suffix
 }
 
+// Get the last used quote type in the string
+func getQuoteType(str string) string {
+    quotes := regexp.MustCompile(`['"]`)
+    allMatches := quotes.FindString(str)
+    if len(allMatches) == 0 {
+        return ""
+    }
+    return string(allMatches[len(allMatches)-1])
+}
+
 func getMacroCompletionItems(packageMacroMap map[Package]map[string]Macro, ProjectYaml DbtProjectYaml) []lsp.CompletionItem {
     items := make([]lsp.CompletionItem, 0, len(packageMacroMap))
 
@@ -100,6 +110,28 @@ func getVariableCompletionItems(variables map[string]Variable, suffix string) []
                 SortText:      k,
             },
         )
+    }
+
+    return items
+}
+
+func getSourceCompletionItems(sources map[string]Source, suffix string, quoteType string) []lsp.CompletionItem {
+    items := make([]lsp.CompletionItem, 0, len(sources))
+
+    for k, s := range sources {
+        for _, t := range s.Tables {
+            items = append(
+                items,
+                lsp.CompletionItem{
+                    Label:         fmt.Sprintf("%s - %s", s.Name, t.Name),
+                    Detail:        fmt.Sprintf("Source: %s", s.Name),
+                    Documentation: fmt.Sprintf("%s\n\nTable: %s\n%s", s.Description, t.Name, t.Description),
+                    Kind:          completionKind.Reference,
+                    InsertText:    fmt.Sprintf("%s%s, %s%s%s", s.Name, quoteType, quoteType, t.Name, suffix),
+                    SortText:      k,
+                },
+            )
+        }
     }
 
     return items

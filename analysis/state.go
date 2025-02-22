@@ -138,7 +138,16 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
            prevToken = prevToken.PrevToken
         }
         if prevToken.Token.Type == parser.SOURCE {
-            response.Result.Contents = s.DbtContext.SourceDetailMap[prevToken.Token.Literal].Tables[cursorToken.Literal].Description
+            source := s.DbtContext.SourceDetailMap[prevToken.Token.Literal]
+            sourceTable := s.DbtContext.SourceDetailMap[prevToken.Token.Literal].Tables[cursorToken.Literal]
+
+            response.Result.Contents = fmt.Sprintf(
+                "Source: %s\n%s\n\nTable: %s\n%s",
+                source.Name,
+                source.Description,
+                sourceTable.Name,
+                sourceTable.Description,
+            )
         }
     case parser.VAR:
         response.Result.Contents = fmt.Sprintf(
@@ -271,6 +280,7 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
     textAfterCursor := lineText[cursorOffset:]
 
     refRegex := regexp.MustCompile(`\bref\(('|")[a-zA-z]*$`)
+    sourceRegex := regexp.MustCompile(`\bsource\(('|")[a-zA-z]*$`)
     varRegex := regexp.MustCompile(`\bvar\(('|")[a-zA-z]*$`)
     jinjaBlockRegex := regexp.MustCompile(`\{\{\s*`)
 
@@ -278,6 +288,12 @@ func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position
         items = getRefCompletionItems(
             s.DbtContext.ModelDetailMap,
             getSuffix(lineText, textAfterCursor, "ref"),
+        )
+    } else if sourceRegex.MatchString(textBeforeCursor) {
+        items = getSourceCompletionItems(
+            s.DbtContext.SourceDetailMap,
+            getSuffix(lineText, textAfterCursor, "source"),
+            getQuoteType(lineText),
         )
     } else if varRegex.MatchString(textBeforeCursor) {
         items = getVariableCompletionItems(
