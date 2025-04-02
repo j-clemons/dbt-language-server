@@ -52,7 +52,7 @@ func NewInitializeResponse(id int) InitializeResponse {
             },
             ServerInfo:   ServerInfo{
                 Name:    "dbt-language-server",
-                Version: "0.0.0.0",
+                Version: "v0.1.0-beta",
             },
         },
     }
