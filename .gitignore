@@ -2,3 +2,4 @@ log.txt
 dbt-language-server
 .DS_Store
 benchmarks/
+dist/
