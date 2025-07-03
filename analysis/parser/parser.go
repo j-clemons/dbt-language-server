@@ -1,12 +1,11 @@
 package parser
 
 import (
-	"errors"
-	"sort"
+    "errors"
+    "sort"
 
-	"github.com/j-clemons/dbt-language-server/docs"
+    "github.com/j-clemons/dbt-language-server/docs"
 )
-
 
 type Parser struct {
     l       *Lexer
@@ -32,9 +31,9 @@ func NewParser(input string, dialect docs.Dialect) *Parser {
     return &Parser{
         l: New(input, dialect),
         ctes: CTE{
-            Ind: false,
+            Ind:        false,
             ParenCount: -1,
-            Tokens: []Token{},
+            Tokens:     []Token{},
         },
     }
 }
@@ -143,6 +142,15 @@ func (p *Parser) parseSource() {
     }
 }
 
+func (p *Parser) parseConfig() {
+    p.NextToken()
+    if p.curTok.Type == LPAREN {
+        p.incParenCount()
+        // Parse config parameters - we'll mark the config function call
+        // and let the rest of the parsing handle the parameters normally
+    }
+}
+
 func (p *Parser) incParenCount() {
     if p.ctes.Ind {
         p.ctes.ParenCount++
@@ -178,14 +186,16 @@ func (p *Parser) parseTokens() {
         case DB_LBRACE:
             p.NextToken()
             switch p.curTok.Type {
-                case SOURCE:
-                    p.parseSource()
-                case REF:
-                    p.parseRef()
-                case VAR:
-                    p.parseVar()
-                case IDENT:
-                    p.parseMacro()
+            case SOURCE:
+                p.parseSource()
+            case REF:
+                p.parseRef()
+            case VAR:
+                p.parseVar()
+            case CONFIG:
+                p.parseConfig()
+            case IDENT:
+                p.parseMacro()
             }
         case DB_RBRACE:
         }
@@ -229,8 +239,8 @@ func (ti *TokenIndex) FindTokenAtCursor(line, column int) (*TokenLL, error) {
     })
 
     if idx >= 0 &&
-       column >= lineTokens[idx].Token.Column &&
-       column < lineTokens[idx].Token.Column + len(lineTokens[idx].Token.Literal) {
+        column >= lineTokens[idx].Token.Column &&
+        column < lineTokens[idx].Token.Column + len(lineTokens[idx].Token.Literal) {
         return &lineTokens[idx], nil
     }
 

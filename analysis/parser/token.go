@@ -55,6 +55,7 @@ const (
    SOURCE_TABLE      = "SOURCE_TABLE"
    MACRO             = "MACRO"
    PACKAGE           = "PACKAGE"
+   CONFIG            = "CONFIG"
 
    //                keywords
    ACCOUNT           = "ACCOUNT"
@@ -284,7 +285,6 @@ var snowflakeKeywords = map[string]TokenType{
     "with":              WITH,
 }
 
-
 var duckdbKeywords = map[string]TokenType{
     "all":          ALL,
     "analyse":      ANALYSE,
@@ -363,7 +363,6 @@ var duckdbKeywords = map[string]TokenType{
     "with":         WITH,
 }
 
-
 func LookupIdent(ident string, dialect docs.Dialect) TokenType {
     keywords := map[string]TokenType{}
     switch dialect {
@@ -377,7 +376,7 @@ func LookupIdent(ident string, dialect docs.Dialect) TokenType {
     keywords["ref"] = REF
     keywords["var"] = VAR
     keywords["source"] = SOURCE
-
+    keywords["config"] = CONFIG
     if tok, ok := keywords[ident]; ok {
         return tok
     }

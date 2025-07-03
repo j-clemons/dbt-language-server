@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"testing"
+    "testing"
 
-	"github.com/j-clemons/dbt-language-server/docs"
+    "github.com/j-clemons/dbt-language-server/docs"
 )
 
 func TestParseCommonTableExpressions(t *testing.T) {
@@ -34,6 +34,68 @@ from cte2`
             t.Fatalf("ctes[%d] - expected=%v, got=%v",
                 i, expCte, ctes[i])
         }
+    }
+}
+
+func TestParseConfigBlock(t *testing.T) {
+    input := `{{ config(materialized='table', unique_key='id') }}
+select * from users`
+
+    expected := []Token{
+        {Type: DB_LBRACE, Literal: "{{", Line: 0, Column: 0},
+        {Type: CONFIG, Literal: "config", Line: 0, Column: 3},
+        {Type: LPAREN, Literal: "(", Line: 0, Column: 9},
+        {Type: IDENT, Literal: "materialized", Line: 0, Column: 10},
+        {Type: EQUAL, Literal: "=", Line: 0, Column: 22},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 0, Column: 23},
+        {Type: TABLE, Literal: "table", Line: 0, Column: 24},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 0, Column: 29}, {Type: COMMA, Literal: ",", Line: 0, Column: 30},
+        {Type: IDENT, Literal: "unique_key", Line: 0, Column: 32},
+        {Type: EQUAL, Literal: "=", Line: 0, Column: 42},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 0, Column: 43},
+        {Type: IDENT, Literal: "id", Line: 0, Column: 44},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 0, Column: 46},
+        {Type: RPAREN, Literal: ")", Line: 0, Column: 47},
+        {Type: DB_RBRACE, Literal: "}}", Line: 0, Column: 49},
+        {Type: SELECT, Literal: "select", Line: 1, Column: 0},
+        {Type: ASTERISK, Literal: "*", Line: 1, Column: 7},
+        {Type: FROM, Literal: "from", Line: 1, Column: 9},
+        {Type: IDENT, Literal: "users", Line: 1, Column: 14},
+    }
+
+    p := Parse(input, docs.Dialect("snowflake"))
+    tokens := p.tokens
+
+    for i, expToken := range expected {
+        if expToken != tokens[i].Token {
+            t.Fatalf("tokens[%d] - expected=%v, got=%v",
+                i, expToken, tokens[i].Token)
+        }
+    }
+}
+
+func TestParseComplexConfigBlock(t *testing.T) {
+    input := `{{ config(
+    materialized='incremental',
+    unique_key='id',
+    on_schema_change='fail'
+) }}
+select * from users`
+
+    p := Parse(input, docs.Dialect("snowflake"))
+    tokens := p.tokens
+
+    // Verify that config is properly recognized
+    configFound := false
+    for _, token := range tokens {
+        if token.Token.Type == CONFIG && token.Token.Literal == "config" {
+            configFound = true
+            break
+        }
+    }
+
+    if !configFound {
+        t.Fatal("CONFIG token not found in parsed tokens")
     }
 }
 
