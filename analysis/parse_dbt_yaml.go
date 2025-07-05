@@ -1,111 +1,111 @@
 package analysis
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
+    "fmt"
+    "os"
+    "path/filepath"
+    "regexp"
 
-	"github.com/j-clemons/dbt-language-server/lsp"
-	"github.com/j-clemons/dbt-language-server/util"
-	"gopkg.in/yaml.v3"
+    "github.com/j-clemons/dbt-language-server/lsp"
+    "github.com/j-clemons/dbt-language-server/util"
+    "gopkg.in/yaml.v3"
 )
 
 type AnnotatedField[T any] struct {
-	Value    T
-	Position lsp.Position
+    Value    T
+    Position lsp.Position
 }
 
 func (a *AnnotatedField[T]) UnmarshalYAML(value *yaml.Node) error {
-	a.Position = lsp.Position{
-		Line:      value.Line - 1,
-		Character: value.Column - 1,
-	}
-	return value.Decode(&a.Value)
+    a.Position = lsp.Position{
+        Line:      value.Line - 1,
+        Character: value.Column - 1,
+    }
+    return value.Decode(&a.Value)
 }
 
 type AnnotatedMap map[string]AnnotatedField[any]
 
 func (a *AnnotatedMap) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("expected mapping node but got %v", value.Kind)
-	}
+    if value.Kind != yaml.MappingNode {
+        return fmt.Errorf("expected mapping node but got %v", value.Kind)
+    }
 
     *a = make(AnnotatedMap)
-	for i := 0; i < len(value.Content); i += 2 {
-		keyNode := value.Content[i]
-		valueNode := value.Content[i+1]
+    for i := 0; i < len(value.Content); i += 2 {
+        keyNode := value.Content[i]
+        valueNode := value.Content[i+1]
 
-		var key string
-		if err := keyNode.Decode(&key); err != nil {
-			return fmt.Errorf("failed to decode key: %w", err)
-		}
+        var key string
+        if err := keyNode.Decode(&key); err != nil {
+            return fmt.Errorf("failed to decode key: %w", err)
+        }
 
-		if valueNode.Kind == yaml.MappingNode {
-			var nested AnnotatedMap
-			if err := valueNode.Decode(&nested); err != nil {
-				return fmt.Errorf("failed to decode nested map for key '%s': %w", key, err)
-			}
+        if valueNode.Kind == yaml.MappingNode {
+            var nested AnnotatedMap
+            if err := valueNode.Decode(&nested); err != nil {
+                return fmt.Errorf("failed to decode nested map for key '%s': %w", key, err)
+            }
 
-			(*a)[key] = AnnotatedField[any]{
-				Value: nested,
-				Position: lsp.Position{
-					Line:      valueNode.Line - 1,
-					Character: valueNode.Column - 1,
-				},
-			}
-		} else {
-			var value any
-			if err := valueNode.Decode(&value); err != nil {
-				return fmt.Errorf("failed to decode value for key '%s': %w", key, err)
-			}
-
-			(*a)[key] = AnnotatedField[any]{
-				Value: value,
+            (*a)[key] = AnnotatedField[any]{
+                Value: nested,
                 Position: lsp.Position{
-					Line:      valueNode.Line - 1,
+                    Line:      valueNode.Line - 1,
                     Character: valueNode.Column - 1,
-				},
-			}
-		}
-	}
-	return nil
+                },
+            }
+        } else {
+            var value any
+            if err := valueNode.Decode(&value); err != nil {
+                return fmt.Errorf("failed to decode value for key '%s': %w", key, err)
+            }
+
+            (*a)[key] = AnnotatedField[any]{
+                Value: value,
+                Position: lsp.Position{
+                    Line:      valueNode.Line - 1,
+                    Character: valueNode.Column - 1,
+                },
+            }
+        }
+    }
+    return nil
 }
 
 type DbtProjectYaml struct {
-	ProjectName         AnnotatedField[string]   `yaml:"name"`
+    ProjectName         AnnotatedField[string]   `yaml:"name"`
     Profile             AnnotatedField[string]   `yaml:"profile"`
-	ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
+    ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
     SeedPaths           AnnotatedField[[]string] `yaml:"seed-paths"`
-	MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
-	PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`
-	DocsPaths           AnnotatedField[[]string] `yaml:"docs-paths"`
-	Vars                AnnotatedMap             `yaml:"vars"`
+    MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
+    PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`
+    DocsPaths           AnnotatedField[[]string] `yaml:"docs-paths"`
+    Vars                AnnotatedMap             `yaml:"vars"`
 }
 
 func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
-    fileStr, err := util.ReadFileContents(filepath.Join(projectRoot,"dbt_project.yml"))
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
+    fileStr, err := util.ReadFileContents(filepath.Join(projectRoot, "dbt_project.yml"))
+    if err != nil {
+        fmt.Printf("Error opening file: %v\n", err)
         return DbtProjectYaml{}
 
-	}
+    }
 
-	var projYaml DbtProjectYaml
-	if err := yaml.Unmarshal([]byte(fileStr), &projYaml); err != nil {
-		fmt.Printf("Failed to unmarshal YAML: %v", err)
+    var projYaml DbtProjectYaml
+    if err := yaml.Unmarshal([]byte(fileStr), &projYaml); err != nil {
+        fmt.Printf("Failed to unmarshal YAML: %v", err)
         return DbtProjectYaml{}
-	}
+    }
 
     availableDirs := map[string]int{}
     entries, err := os.ReadDir(projectRoot)
-	if err == nil {
+    if err == nil {
         for _, entry := range entries {
             if entry.IsDir() {
                 availableDirs[entry.Name()] = 1
             }
         }
-	}
+    }
 
     if projYaml.ModelPaths.Value == nil || len(projYaml.ModelPaths.Value) == 0 {
         if availableDirs["models"] == 1 {
@@ -146,6 +146,7 @@ type ModelProperties struct {
     Name        AnnotatedField[string] `yaml:"name"`
     Description AnnotatedField[string] `yaml:"description"`
     ModelConfig AnnotatedMap           `yaml:"config"`
+    SchemaURI   string
 }
 
 type SourceProperties struct {
@@ -163,19 +164,19 @@ type SourceTableProperties struct {
 
 func parsePropertiesYamlFile(path string) PropertiesYaml {
     file, err := os.Open(path)
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
+    if err != nil {
+        fmt.Printf("Error opening file: %v\n", err)
         return PropertiesYaml{}
 
-	}
-	defer file.Close()
+    }
+    defer file.Close()
 
-	var config PropertiesYaml
-	decoder := yaml.NewDecoder(file)
-	if err := decoder.Decode(&config); err != nil {
-		fmt.Printf("Error decoding YAML: %v\n", err)
+    var config PropertiesYaml
+    decoder := yaml.NewDecoder(file)
+    if err := decoder.Decode(&config); err != nil {
+        fmt.Printf("Error decoding YAML: %v\n", err)
         return PropertiesYaml{}
-	}
+    }
     return config
 }
 
@@ -203,7 +204,7 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) (map[string]Mo
     docsMap := processDocsFiles(docsFiles)
 
     for _, path := range projYaml.ModelPaths.Value {
-        _, err := os.ReadDir(projectRoot+"/"+path)
+        _, err := os.ReadDir(projectRoot + "/" + path)
         if err != nil {
             continue
         }
@@ -223,9 +224,9 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) (map[string]Mo
                             },
                         },
                     },
+                    SchemaURI: file,
                 }
             }
-
             for _, source := range dbtYml.Sources {
                 sourceMap[source.Name.Value] = Source{
                     Name:        source.Name.Value,

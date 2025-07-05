@@ -1,15 +1,16 @@
 package analysis
 
 import (
-	"fmt"
-	"regexp"
-	"strings"
-	"sync"
+    "fmt"
+    "path/filepath"
+    "regexp"
+    "strings"
+    "sync"
 
-	"github.com/j-clemons/dbt-language-server/analysis/parser"
-	"github.com/j-clemons/dbt-language-server/docs"
-	"github.com/j-clemons/dbt-language-server/lsp"
-	"github.com/j-clemons/dbt-language-server/util"
+    "github.com/j-clemons/dbt-language-server/analysis/parser"
+    "github.com/j-clemons/dbt-language-server/docs"
+    "github.com/j-clemons/dbt-language-server/lsp"
+    "github.com/j-clemons/dbt-language-server/util"
 )
 
 type State struct {
@@ -35,7 +36,7 @@ type DbtContext struct {
 
 func NewState() State {
     return State{
-        Documents:  map[string]Document{},
+        Documents: map[string]Document{},
         DbtContext: DbtContext{
             ProjectRoot:       "",
             ProjectYaml:       DbtProjectYaml{},
@@ -57,10 +58,10 @@ func (s *State) refreshDbtContext(wd string) {
     var wg sync.WaitGroup
     wg.Add(3)
 
-    var modelMap  map[string]ModelDetails
+    var modelMap map[string]ModelDetails
     var sourceMap map[string]Source
-    var macroMap  map[Package]map[string]Macro
-    var varMap    map[string]Variable
+    var macroMap map[Package]map[string]Macro
+    var varMap map[string]Variable
 
     go func() {
         defer wg.Done()
@@ -135,7 +136,7 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
     case parser.SOURCE_TABLE:
         prevToken := cursorTokenLL.PrevToken
         for i := 0; i < 3; i++ {
-           prevToken = prevToken.PrevToken
+            prevToken = prevToken.PrevToken
         }
         if prevToken.Token.Type == parser.SOURCE {
             source := s.DbtContext.SourceDetailMap[prevToken.Token.Literal]
@@ -171,11 +172,11 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
 
 func (s *State) Definition(id int, uri string, position lsp.Position) lsp.DefinitionResponse {
     response := lsp.DefinitionResponse{
-		Response: lsp.Response{
-			RPC: "2.0",
-			ID:  &id,
-		},
-		Result: lsp.Location{
+        Response: lsp.Response{
+            RPC: "2.0",
+            ID:  &id,
+        },
+        Result: lsp.Location{
             URI: uri,
             Range: lsp.Range{
                 Start: lsp.Position{
@@ -188,7 +189,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
                 },
             },
         },
-	}
+    }
 
     cursorTokenLL, err := s.Documents[uri].Tokens.FindTokenAtCursor(position.Line, position.Character)
     if err != nil {
@@ -222,7 +223,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
     case parser.SOURCE_TABLE:
         prevToken := cursorTokenLL.PrevToken
         for i := 0; i < 3; i++ {
-           prevToken = prevToken.PrevToken
+            prevToken = prevToken.PrevToken
         }
         if prevToken.Token.Type == parser.SOURCE {
             source := s.DbtContext.SourceDetailMap[prevToken.Token.Literal].Tables[cursorToken.Literal]
@@ -265,7 +266,68 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
         }
     }
 
-	return response
+    return response
+}
+
+func (s *State) GoToSchema(id int, uri string, position lsp.Position) lsp.ExecuteCommandResponse {
+    response := lsp.ExecuteCommandResponse{
+        Response: lsp.Response{
+            RPC: "2.0",
+            ID:  &id,
+        },
+        Result: nil,
+    }
+
+    // Check if document exists and has tokens
+    doc, exists := s.Documents[uri]
+    if exists && doc.Tokens != nil {
+        // First, check if cursor is on a REF token
+        cursorTokenLL, err := doc.Tokens.FindTokenAtCursor(position.Line, position.Character)
+        if err == nil {
+            cursorToken := cursorTokenLL.Token
+
+            if cursorToken.Type == parser.REF {
+                // Navigate to schema for the referenced model
+                model, modelExists := s.DbtContext.ModelDetailMap[cursorToken.Literal]
+                if modelExists && model.SchemaURI != "" {
+                    response.Result = lsp.Location{
+                        URI:   "file://" + model.SchemaURI,
+                        Range: model.SchemaRange,
+                    }
+                    return response
+                }
+            }
+        }
+    }
+
+    // If not on a REF token, navigate to schema for current file
+    // Extract model name from current file URI
+    modelName := getModelNameFromURI(uri)
+    if modelName != "" {
+        model, modelExists := s.DbtContext.ModelDetailMap[modelName]
+        if modelExists && model.SchemaURI != "" {
+            response.Result = lsp.Location{
+                URI:   "file://" + model.SchemaURI,
+                Range: model.SchemaRange,
+            }
+        }
+    }
+    return response
+}
+
+func getModelNameFromURI(uri string) string {
+    // Remove file:// prefix if present
+    cleanURI := strings.TrimPrefix(uri, "file://")
+
+    // Get the base filename without extension
+    baseName := filepath.Base(cleanURI)
+
+    // Remove .sql extension
+    if strings.HasSuffix(baseName, ".sql") {
+        return strings.TrimSuffix(baseName, ".sql")
+    }
+
+    return ""
 }
 
 func (s *State) TextDocumentCompletion(id int, uri string, position lsp.Position) lsp.CompletionResponse {

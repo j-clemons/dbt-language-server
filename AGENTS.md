@@ -15,7 +15,7 @@
 - **Logging**: Use `util.GetLogger()` for consistent logging, prefix messages with context
 - **Structs**: Group related fields, use composition over inheritance
 - **Functions**: Keep functions focused, use receiver methods for type-specific operations
-- **Indentation**: Use 4 spaces for indentation
+- **Formatting**: Use `gofmt` with `gofmt -w .`
 
 ## Project Structure
 - `/analysis`: Core parsing and state management

@@ -25,11 +25,16 @@ type InitializeResult struct {
 }
 
 type ServerCapabilities struct {
-    TextDocumentSync   int  `json:"textDocumentSync"`
+    TextDocumentSync int `json:"textDocumentSync"`
 
-    HoverProvider      bool           `json:"hoverProvider"`
-    DefinitionProvider bool           `json:"definitionProvider"`
-    CompletionProvider map[string]any `json:"completionProvider"`
+    HoverProvider          bool                  `json:"hoverProvider"`
+    DefinitionProvider     bool                  `json:"definitionProvider"`
+    CompletionProvider     map[string]any        `json:"completionProvider"`
+    ExecuteCommandProvider ExecuteCommandOptions `json:"executeCommandProvider"`
+}
+
+type ExecuteCommandOptions struct {
+    Commands []string `json:"commands"`
 }
 
 type ServerInfo struct {
@@ -49,8 +54,10 @@ func NewInitializeResponse(id int) InitializeResponse {
                 HoverProvider:      true,
                 DefinitionProvider: true,
                 CompletionProvider: map[string]any{},
-            },
-            ServerInfo:   ServerInfo{
+                ExecuteCommandProvider: ExecuteCommandOptions{
+                    Commands: []string{"dbt.goToSchema"},
+                },
+            }, ServerInfo: ServerInfo{
                 Name:    "dbt-language-server",
                 Version: "v0.1.0-beta",
             },

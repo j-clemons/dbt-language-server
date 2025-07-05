@@ -1,9 +1,13 @@
 package analysis
 
+import "github.com/j-clemons/dbt-language-server/lsp"
+
 type ModelDetails struct {
     URI         string
     ProjectName string
     Description string
+    SchemaURI   string
+    SchemaRange lsp.Range
 }
 
 type ProjectDetails struct {
@@ -40,10 +44,26 @@ func (s *State) getModelDetails() (map[string]ModelDetails, map[string]Source) {
                 modelMapKey = alias
             }
 
+            schemaDetails, hasSchema := modelSchemaDetails[k]
+            description := ""
+            schemaURI := ""
+            schemaRange := lsp.Range{}
+
+            if hasSchema {
+                description = schemaDetails.Description.Value
+                schemaURI = schemaDetails.SchemaURI
+                schemaRange = lsp.Range{
+                    Start: schemaDetails.Name.Position,
+                    End:   schemaDetails.Name.Position,
+                }
+            }
+
             modelMap[modelMapKey] = ModelDetails{
                 URI:         v,
                 ProjectName: p.DbtProjectYaml.ProjectName.Value,
-                Description: modelSchemaDetails[k].Description.Value,
+                Description: description,
+                SchemaURI:   schemaURI,
+                SchemaRange: schemaRange,
             }
         }
     }
@@ -54,8 +74,9 @@ func (s *State) getModelDetails() (map[string]ModelDetails, map[string]Source) {
             URI:         v,
             ProjectName: s.DbtContext.ProjectYaml.ProjectName.Value,
             Description: "Seed File",
+            SchemaURI:   "",
+            SchemaRange: lsp.Range{},
         }
     }
-
     return modelMap, sourceMap
 }

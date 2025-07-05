@@ -113,6 +113,34 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
         response := state.TextDocumentCompletion(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
         writeResponse(writer, response)
+    case "workspace/executeCommand":
+        logger.Print("workspace/executeCommand")
+        var request lsp.ExecuteCommandRequest
+        if err := json.Unmarshal(contents, &request); err != nil {
+            logger.Printf("workspace/executeCommand: %s", err)
+            return
+        }
+
+        if request.Params.Command == "dbt.goToSchema" {
+            // Parse arguments to get URI and position
+            if len(request.Params.Arguments) >= 1 {
+                argMap, ok := request.Params.Arguments[0].(map[string]interface{})
+                if ok {
+                    uri, _ := argMap["uri"].(string)
+                    positionMap, _ := argMap["position"].(map[string]interface{})
+                    line, _ := positionMap["line"].(float64)
+                    character, _ := positionMap["character"].(float64)
+
+                    position := lsp.Position{
+                        Line:      int(line),
+                        Character: int(character),
+                    }
+
+                    response := state.GoToSchema(request.ID, uri, position)
+                    writeResponse(writer, response)
+                }
+            }
+        }
     }
 }
 
