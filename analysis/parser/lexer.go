@@ -1,12 +1,12 @@
 package parser
 
 import (
-	"bufio"
-	"bytes"
-	"io"
-	"strings"
+    "bufio"
+    "bytes"
+    "io"
+    "strings"
 
-	"github.com/j-clemons/dbt-language-server/docs"
+    "github.com/j-clemons/dbt-language-server/docs"
 )
 
 type Lexer struct {
@@ -87,7 +87,7 @@ func (l *Lexer) NextToken() Token {
     case '>':
         tok = l.twoCharToken('=', GT_EQ, GT)
     case '{':
-        tok = l.twoCharToken('{', DB_LBRACE, LBRACE)
+        tok = l.handleLeftBrace()
     case '}':
         tok = l.twoCharToken('}', DB_RBRACE, RBRACE)
     case '\'':
@@ -96,6 +96,8 @@ func (l *Lexer) NextToken() Token {
         tok = newToken(DOUBLE_QUOTE, *l)
     case '`':
         tok = newToken(BACKTICK, *l)
+    case '%':
+        tok = l.twoCharToken('}', JINJA_RBRACE, PERCENT)
     case 0:
         tok.Literal = ""
         tok.Type = EOF
@@ -124,7 +126,7 @@ func (l *Lexer) NextToken() Token {
 func (l *Lexer) readIdentifier() string {
     var buf bytes.Buffer
 
-    for (isLetter(l.ch) || isDigit(l.ch)) {
+    for isLetter(l.ch) || isDigit(l.ch) {
         buf.WriteByte(l.ch)
         l.readChar()
     }
@@ -166,12 +168,22 @@ func (l *Lexer) twoCharToken(nextCh byte, trueToken, defaultToken TokenType) Tok
         ch := l.ch
         l.readChar()
         return Token{
-            Type: trueToken,
+            Type:    trueToken,
             Literal: string(ch) + string(l.ch),
-            Line: l.line,
-            Column: l.column - 1,
+            Line:    l.line,
+            Column:  l.column - 1,
         }
     }
     return newToken(defaultToken, *l)
 }
 
+func (l *Lexer) handleLeftBrace() Token {
+    switch l.peekChar() {
+    case '%':
+        return l.twoCharToken('%', JINJA_LBRACE, LBRACE)
+    case '{':
+        return l.twoCharToken('{', DB_LBRACE, LBRACE)
+    default:
+        return newToken(LBRACE, *l)
+    }
+}

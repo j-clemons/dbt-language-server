@@ -202,3 +202,46 @@ from {{ ref('users') }}`
     }
 
 }
+
+func TestParseJinjaStatementBlocks(t *testing.T) {
+    input := `{% set v = var('variable_name') %}
+select * from {{ ref('users') }}`
+
+    expected := []Token{
+        {Type: JINJA_LBRACE, Literal: "{%", Line: 0, Column: 0},
+        {Type: SET, Literal: "set", Line: 0, Column: 3},
+        {Type: IDENT, Literal: "v", Line: 0, Column: 7},
+        {Type: EQUAL, Literal: "=", Line: 0, Column: 9},
+        {Type: VAR, Literal: "var", Line: 0, Column: 11},
+        {Type: LPAREN, Literal: "(", Line: 0, Column: 14},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 0, Column: 15},
+        {Type: VAR, Literal: "variable_name", Line: 0, Column: 16},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 0, Column: 29},
+        {Type: RPAREN, Literal: ")", Line: 0, Column: 30},
+        {Type: JINJA_RBRACE, Literal: "%}", Line: 0, Column: 32},
+
+        {Type: SELECT, Literal: "select", Line: 1, Column: 0},
+        {Type: ASTERISK, Literal: "*", Line: 1, Column: 7},
+        {Type: FROM, Literal: "from", Line: 1, Column: 9},
+        {Type: DB_LBRACE, Literal: "{{", Line: 1, Column: 14},
+        {Type: REF, Literal: "ref", Line: 1, Column: 17},
+        {Type: LPAREN, Literal: "(", Line: 1, Column: 20},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 1, Column: 21},
+        {Type: REF, Literal: "users", Line: 1, Column: 22},
+        {Type: SINGLE_QUOTE, Literal: "'", Line: 1, Column: 27},
+        {Type: RPAREN, Literal: ")", Line: 1, Column: 28},
+        {Type: DB_RBRACE, Literal: "}}", Line: 1, Column: 30},
+    }
+
+    p := Parse(input, docs.Dialect("snowflake"))
+    tokens := p.tokens
+
+    for i, expToken := range expected {
+        if i >= len(tokens) {
+            t.Fatalf("tokens[%d] - expected=%v, got=<missing>", i, expToken)
+        }
+        if expToken != tokens[i].Token {
+            t.Fatalf("tokens[%d] - expected=%v, got=%v", i, expToken, tokens[i].Token)
+        }
+    }
+}

@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"testing"
+    "testing"
 
-	"github.com/j-clemons/dbt-language-server/docs"
+    "github.com/j-clemons/dbt-language-server/docs"
 )
 
 func TestNextToken(t *testing.T) {

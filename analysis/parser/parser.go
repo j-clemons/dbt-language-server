@@ -183,21 +183,24 @@ func (p *Parser) parseTokens() {
                     p.ctes.Ind = false
                 }
             }
+        case SOURCE:
+            p.parseSource()
+        case REF:
+            p.parseRef()
+        case VAR:
+            p.parseVar()
         case DB_LBRACE:
-            p.NextToken()
-            switch p.curTok.Type {
-            case SOURCE:
-                p.parseSource()
-            case REF:
-                p.parseRef()
-            case VAR:
-                p.parseVar()
+            switch p.peekTok.Type {
             case CONFIG:
+                p.NextToken()
                 p.parseConfig()
             case IDENT:
+                p.NextToken()
                 p.parseMacro()
             }
+        case JINJA_LBRACE:
         case DB_RBRACE:
+        case JINJA_RBRACE:
         }
         p.NextToken()
     }
