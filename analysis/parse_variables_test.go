@@ -1,16 +1,16 @@
 package analysis
 
 import (
-    "reflect"
-    "testing"
+	"reflect"
+	"testing"
 )
 
 func TestGetProjectVariables(t *testing.T) {
-    expectedState := expectedTestState()
+	expectedState := expectedTestState()
 
-    projectVariables := expectedState.getProjectVariables()
+	projectVariables := expectedState.getProjectVariables()
 
-    if !reflect.DeepEqual(projectVariables, expectedState.DbtContext.VariableDetailMap) {
-        t.Fatalf("expected %v, got %v", expectedState.DbtContext.VariableDetailMap, projectVariables)
-    }
+	if !reflect.DeepEqual(projectVariables, expectedState.DbtContext.VariableDetailMap) {
+		t.Fatalf("expected %v, got %v", expectedState.DbtContext.VariableDetailMap, projectVariables)
+	}
 }

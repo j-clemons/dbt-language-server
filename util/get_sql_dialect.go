@@ -15,22 +15,21 @@ type Profiles struct {
 }
 
 type Target struct {
-    Type string `yaml:"type"`
+	Type string `yaml:"type"`
 }
 
 func GetDialect(profileName string, inputDir string) docs.Dialect {
-    filePath := ""
-    if inputDir == "" {
-        homeDir, err := os.UserHomeDir()
-        if err != nil {
-            log.Println("Error getting home directory:", err)
-            return ""
-        }
-        filePath = filepath.Join(homeDir, ".dbt", "profiles.yml")
-    } else {
-        filePath = filepath.Join(inputDir, ".dbt", "profiles.yml")
-    }
-
+	filePath := ""
+	if inputDir == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			log.Println("Error getting home directory:", err)
+			return ""
+		}
+		filePath = filepath.Join(homeDir, ".dbt", "profiles.yml")
+	} else {
+		filePath = filepath.Join(inputDir, ".dbt", "profiles.yml")
+	}
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -53,10 +52,10 @@ func GetDialect(profileName string, inputDir string) docs.Dialect {
 	}
 
 	if output, ok := entry.Outputs[entry.DefaultTarget]; ok {
-        return docs.Dialect(output.Type)
+		return docs.Dialect(output.Type)
 	} else {
 		log.Println("Default target not found in outputs")
 	}
 
-    return ""
+	return ""
 }

@@ -1,28 +1,28 @@
 package lsp
 
 type CompletionRequest struct {
-    Request
-    Params CompletionParams `json:"params"`
+	Request
+	Params CompletionParams `json:"params"`
 }
 
 type CompletionParams struct {
-    TextDocumentPositionParams
+	TextDocumentPositionParams
 }
 
 type CompletionResponse struct {
-    Response
-    Result []CompletionItem `json:"result"`
+	Response
+	Result []CompletionItem `json:"result"`
 }
 
 type CompletionItem struct {
-    Label         string `json:"label"`
-    Detail        string `json:"detail"`
-    Documentation string `json:"documentation"`
-    Kind          int    `json:"kind"`
-    InsertText    string `json:"insertText"`
-    SortText      string `json:"sortText"`
+	Label         string `json:"label"`
+	Detail        string `json:"detail"`
+	Documentation string `json:"documentation"`
+	Kind          int    `json:"kind"`
+	InsertText    string `json:"insertText"`
+	SortText      string `json:"sortText"`
 }
 
 type CompletionOptions struct {
-    TriggerCharacters []string `json:"triggerCharacters"`
+	TriggerCharacters []string `json:"triggerCharacters"`
 }

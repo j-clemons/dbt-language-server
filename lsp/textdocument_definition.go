@@ -1,15 +1,15 @@
 package lsp
 
 type DefinitionRequest struct {
-    Request
-    Params DefinitionParams `json:"params"`
+	Request
+	Params DefinitionParams `json:"params"`
 }
 
 type DefinitionParams struct {
-    TextDocumentPositionParams
+	TextDocumentPositionParams
 }
 
 type DefinitionResponse struct {
-    Response
-    Result Location `json:"result"`
+	Response
+	Result Location `json:"result"`
 }

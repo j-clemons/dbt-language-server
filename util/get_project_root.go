@@ -1,42 +1,42 @@
 package util
 
 import (
-    "fmt"
-    "os"
-    "log"
-    "path/filepath"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 func findFileDir(fileName string, startPath string) (string, error) {
-    path := startPath
-    for {
-        files, err := os.ReadDir(path)
-        if err != nil {
-            return "", err
-        }
+	path := startPath
+	for {
+		files, err := os.ReadDir(path)
+		if err != nil {
+			return "", err
+		}
 
-        for _, file := range files {
-            if file.Name() == fileName {
-                return path, nil
-            }
-        }
-        if path == "/" {
-            return "", fmt.Errorf("File %s not found", fileName)
-        }
+		for _, file := range files {
+			if file.Name() == fileName {
+				return path, nil
+			}
+		}
+		if path == "/" {
+			return "", fmt.Errorf("File %s not found", fileName)
+		}
 
-        path = filepath.Dir(path)
-    }
+		path = filepath.Dir(path)
+	}
 }
 
 func GetProjectRoot(projFile string, wd string) string {
-    if wd == "" {
-        wd, _ = os.Getwd()
-    }
-    dir, err := findFileDir(projFile, wd)
-    if err != nil {
-        log.Print(err)
-        return ""
-    }
+	if wd == "" {
+		wd, _ = os.Getwd()
+	}
+	dir, err := findFileDir(projFile, wd)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
 
-    return dir
+	return dir
 }

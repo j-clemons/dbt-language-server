@@ -1,284 +1,284 @@
 package analysis
 
 import (
-    "fmt"
-    "os"
-    "path/filepath"
-    "regexp"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 
-    "github.com/j-clemons/dbt-language-server/lsp"
-    "github.com/j-clemons/dbt-language-server/util"
-    "gopkg.in/yaml.v3"
+	"github.com/j-clemons/dbt-language-server/lsp"
+	"github.com/j-clemons/dbt-language-server/util"
+	"gopkg.in/yaml.v3"
 )
 
 type AnnotatedField[T any] struct {
-    Value    T
-    Position lsp.Position
+	Value    T
+	Position lsp.Position
 }
 
 func (a *AnnotatedField[T]) UnmarshalYAML(value *yaml.Node) error {
-    a.Position = lsp.Position{
-        Line:      value.Line - 1,
-        Character: value.Column - 1,
-    }
-    return value.Decode(&a.Value)
+	a.Position = lsp.Position{
+		Line:      value.Line - 1,
+		Character: value.Column - 1,
+	}
+	return value.Decode(&a.Value)
 }
 
 type AnnotatedMap map[string]AnnotatedField[any]
 
 func (a *AnnotatedMap) UnmarshalYAML(value *yaml.Node) error {
-    if value.Kind != yaml.MappingNode {
-        return fmt.Errorf("expected mapping node but got %v", value.Kind)
-    }
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("expected mapping node but got %v", value.Kind)
+	}
 
-    *a = make(AnnotatedMap)
-    for i := 0; i < len(value.Content); i += 2 {
-        keyNode := value.Content[i]
-        valueNode := value.Content[i+1]
+	*a = make(AnnotatedMap)
+	for i := 0; i < len(value.Content); i += 2 {
+		keyNode := value.Content[i]
+		valueNode := value.Content[i+1]
 
-        var key string
-        if err := keyNode.Decode(&key); err != nil {
-            return fmt.Errorf("failed to decode key: %w", err)
-        }
+		var key string
+		if err := keyNode.Decode(&key); err != nil {
+			return fmt.Errorf("failed to decode key: %w", err)
+		}
 
-        if valueNode.Kind == yaml.MappingNode {
-            var nested AnnotatedMap
-            if err := valueNode.Decode(&nested); err != nil {
-                return fmt.Errorf("failed to decode nested map for key '%s': %w", key, err)
-            }
+		if valueNode.Kind == yaml.MappingNode {
+			var nested AnnotatedMap
+			if err := valueNode.Decode(&nested); err != nil {
+				return fmt.Errorf("failed to decode nested map for key '%s': %w", key, err)
+			}
 
-            (*a)[key] = AnnotatedField[any]{
-                Value: nested,
-                Position: lsp.Position{
-                    Line:      valueNode.Line - 1,
-                    Character: valueNode.Column - 1,
-                },
-            }
-        } else {
-            var value any
-            if err := valueNode.Decode(&value); err != nil {
-                return fmt.Errorf("failed to decode value for key '%s': %w", key, err)
-            }
+			(*a)[key] = AnnotatedField[any]{
+				Value: nested,
+				Position: lsp.Position{
+					Line:      valueNode.Line - 1,
+					Character: valueNode.Column - 1,
+				},
+			}
+		} else {
+			var value any
+			if err := valueNode.Decode(&value); err != nil {
+				return fmt.Errorf("failed to decode value for key '%s': %w", key, err)
+			}
 
-            (*a)[key] = AnnotatedField[any]{
-                Value: value,
-                Position: lsp.Position{
-                    Line:      valueNode.Line - 1,
-                    Character: valueNode.Column - 1,
-                },
-            }
-        }
-    }
-    return nil
+			(*a)[key] = AnnotatedField[any]{
+				Value: value,
+				Position: lsp.Position{
+					Line:      valueNode.Line - 1,
+					Character: valueNode.Column - 1,
+				},
+			}
+		}
+	}
+	return nil
 }
 
 type DbtProjectYaml struct {
-    ProjectName         AnnotatedField[string]   `yaml:"name"`
-    Profile             AnnotatedField[string]   `yaml:"profile"`
-    ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
-    SeedPaths           AnnotatedField[[]string] `yaml:"seed-paths"`
-    MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
-    PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`
-    DocsPaths           AnnotatedField[[]string] `yaml:"docs-paths"`
-    Vars                AnnotatedMap             `yaml:"vars"`
+	ProjectName         AnnotatedField[string]   `yaml:"name"`
+	Profile             AnnotatedField[string]   `yaml:"profile"`
+	ModelPaths          AnnotatedField[[]string] `yaml:"model-paths"`
+	SeedPaths           AnnotatedField[[]string] `yaml:"seed-paths"`
+	MacroPaths          AnnotatedField[[]string] `yaml:"macro-paths"`
+	PackagesInstallPath AnnotatedField[string]   `yaml:"packages-install-path"`
+	DocsPaths           AnnotatedField[[]string] `yaml:"docs-paths"`
+	Vars                AnnotatedMap             `yaml:"vars"`
 }
 
 func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
-    fileStr, err := util.ReadFileContents(filepath.Join(projectRoot, "dbt_project.yml"))
-    if err != nil {
-        fmt.Printf("Error opening file: %v\n", err)
-        return DbtProjectYaml{}
+	fileStr, err := util.ReadFileContents(filepath.Join(projectRoot, "dbt_project.yml"))
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
+		return DbtProjectYaml{}
 
-    }
+	}
 
-    var projYaml DbtProjectYaml
-    if err := yaml.Unmarshal([]byte(fileStr), &projYaml); err != nil {
-        fmt.Printf("Failed to unmarshal YAML: %v", err)
-        return DbtProjectYaml{}
-    }
+	var projYaml DbtProjectYaml
+	if err := yaml.Unmarshal([]byte(fileStr), &projYaml); err != nil {
+		fmt.Printf("Failed to unmarshal YAML: %v", err)
+		return DbtProjectYaml{}
+	}
 
-    availableDirs := map[string]int{}
-    entries, err := os.ReadDir(projectRoot)
-    if err == nil {
-        for _, entry := range entries {
-            if entry.IsDir() {
-                availableDirs[entry.Name()] = 1
-            }
-        }
-    }
+	availableDirs := map[string]int{}
+	entries, err := os.ReadDir(projectRoot)
+	if err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				availableDirs[entry.Name()] = 1
+			}
+		}
+	}
 
-    if projYaml.ModelPaths.Value == nil || len(projYaml.ModelPaths.Value) == 0 {
-        if availableDirs["models"] == 1 {
-            projYaml.ModelPaths.Value = []string{"models"}
-        }
-    }
-    if projYaml.SeedPaths.Value == nil || len(projYaml.SeedPaths.Value) == 0 {
-        if availableDirs["seeds"] == 1 {
-            projYaml.SeedPaths.Value = []string{"seeds"}
-        }
-    }
-    if projYaml.MacroPaths.Value == nil || len(projYaml.MacroPaths.Value) == 0 {
-        if availableDirs["macros"] == 1 {
-            projYaml.MacroPaths.Value = []string{"macros"}
-        }
-    }
-    if projYaml.PackagesInstallPath.Value == "" {
-        if availableDirs["dbt_packages"] == 1 {
-            projYaml.PackagesInstallPath.Value = "dbt_packages"
-        }
-    }
-    if projYaml.DocsPaths.Value == nil || len(projYaml.DocsPaths.Value) == 0 {
-        if availableDirs["docs"] == 1 {
-            projYaml.DocsPaths.Value = []string{"docs"}
-        }
-        projYaml.DocsPaths.Value = append(projYaml.DocsPaths.Value, projYaml.ModelPaths.Value...)
-        projYaml.DocsPaths.Value = append(projYaml.DocsPaths.Value, projYaml.MacroPaths.Value...)
-    }
-    return projYaml
+	if projYaml.ModelPaths.Value == nil || len(projYaml.ModelPaths.Value) == 0 {
+		if availableDirs["models"] == 1 {
+			projYaml.ModelPaths.Value = []string{"models"}
+		}
+	}
+	if projYaml.SeedPaths.Value == nil || len(projYaml.SeedPaths.Value) == 0 {
+		if availableDirs["seeds"] == 1 {
+			projYaml.SeedPaths.Value = []string{"seeds"}
+		}
+	}
+	if projYaml.MacroPaths.Value == nil || len(projYaml.MacroPaths.Value) == 0 {
+		if availableDirs["macros"] == 1 {
+			projYaml.MacroPaths.Value = []string{"macros"}
+		}
+	}
+	if projYaml.PackagesInstallPath.Value == "" {
+		if availableDirs["dbt_packages"] == 1 {
+			projYaml.PackagesInstallPath.Value = "dbt_packages"
+		}
+	}
+	if projYaml.DocsPaths.Value == nil || len(projYaml.DocsPaths.Value) == 0 {
+		if availableDirs["docs"] == 1 {
+			projYaml.DocsPaths.Value = []string{"docs"}
+		}
+		projYaml.DocsPaths.Value = append(projYaml.DocsPaths.Value, projYaml.ModelPaths.Value...)
+		projYaml.DocsPaths.Value = append(projYaml.DocsPaths.Value, projYaml.MacroPaths.Value...)
+	}
+	return projYaml
 }
 
 type PropertiesYaml struct {
-    Models  []ModelProperties  `yaml:"models"`
-    Sources []SourceProperties `yaml:"sources"`
+	Models  []ModelProperties  `yaml:"models"`
+	Sources []SourceProperties `yaml:"sources"`
 }
 
 type ModelProperties struct {
-    Name        AnnotatedField[string] `yaml:"name"`
-    Description AnnotatedField[string] `yaml:"description"`
-    ModelConfig AnnotatedMap           `yaml:"config"`
-    SchemaURI   string
+	Name        AnnotatedField[string] `yaml:"name"`
+	Description AnnotatedField[string] `yaml:"description"`
+	ModelConfig AnnotatedMap           `yaml:"config"`
+	SchemaURI   string
 }
 
 type SourceProperties struct {
-    Name        AnnotatedField[string]  `yaml:"name"`
-    Database    AnnotatedField[string]  `yaml:"database"`
-    Schema      AnnotatedField[string]  `yaml:"schema"`
-    Description AnnotatedField[string]  `yaml:"description"`
-    Tables      []SourceTableProperties `yaml:"tables"`
+	Name        AnnotatedField[string]  `yaml:"name"`
+	Database    AnnotatedField[string]  `yaml:"database"`
+	Schema      AnnotatedField[string]  `yaml:"schema"`
+	Description AnnotatedField[string]  `yaml:"description"`
+	Tables      []SourceTableProperties `yaml:"tables"`
 }
 
 type SourceTableProperties struct {
-    Name        AnnotatedField[string] `yaml:"name"`
-    Description AnnotatedField[string] `yaml:"description"`
+	Name        AnnotatedField[string] `yaml:"name"`
+	Description AnnotatedField[string] `yaml:"description"`
 }
 
 func parsePropertiesYamlFile(path string) PropertiesYaml {
-    file, err := os.Open(path)
-    if err != nil {
-        fmt.Printf("Error opening file: %v\n", err)
-        return PropertiesYaml{}
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
+		return PropertiesYaml{}
 
-    }
-    defer file.Close()
+	}
+	defer file.Close()
 
-    var config PropertiesYaml
-    decoder := yaml.NewDecoder(file)
-    if err := decoder.Decode(&config); err != nil {
-        fmt.Printf("Error decoding YAML: %v\n", err)
-        return PropertiesYaml{}
-    }
-    return config
+	var config PropertiesYaml
+	decoder := yaml.NewDecoder(file)
+	if err := decoder.Decode(&config); err != nil {
+		fmt.Printf("Error decoding YAML: %v\n", err)
+		return PropertiesYaml{}
+	}
+	return config
 }
 
 type Source struct {
-    Name        string
-    Description string
-    URI         string
-    Range       lsp.Range
-    Tables      map[string]SourceTable
+	Name        string
+	Description string
+	URI         string
+	Range       lsp.Range
+	Tables      map[string]SourceTable
 }
 
 type SourceTable struct {
-    Name        string
-    Description string
-    Table       string
-    URI         string
-    Range       lsp.Range
+	Name        string
+	Description string
+	Table       string
+	URI         string
+	Range       lsp.Range
 }
 
 func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) (map[string]ModelProperties, map[string]Source) {
-    modelMap := make(map[string]ModelProperties)
-    sourceMap := make(map[string]Source)
+	modelMap := make(map[string]ModelProperties)
+	sourceMap := make(map[string]Source)
 
-    docsFiles := getDocsFiles(projYaml)
-    docsMap := processDocsFiles(docsFiles)
+	docsFiles := getDocsFiles(projYaml)
+	docsMap := processDocsFiles(docsFiles)
 
-    for _, path := range projYaml.ModelPaths.Value {
-        _, err := os.ReadDir(projectRoot + "/" + path)
-        if err != nil {
-            continue
-        }
-        files, _ := util.WalkFilepath(projectRoot+"/"+path+"/", ".yml")
-        for _, file := range files {
-            dbtYml := parsePropertiesYamlFile(file)
-            for _, model := range dbtYml.Models {
-                modelMap[model.Name.Value] = ModelProperties{
-                    Name:        model.Name,
-                    Description: AnnotatedField[string]{Value: replaceDescriptionDocsBlocks(model.Description.Value, docsMap)},
-                    ModelConfig: AnnotatedMap{
-                        "alias": AnnotatedField[any]{
-                            Value: model.ModelConfig["alias"].Value,
-                            Position: lsp.Position{
-                                Line:      model.ModelConfig["alias"].Position.Line,
-                                Character: model.ModelConfig["alias"].Position.Character,
-                            },
-                        },
-                    },
-                    SchemaURI: file,
-                }
-            }
-            for _, source := range dbtYml.Sources {
-                sourceMap[source.Name.Value] = Source{
-                    Name:        source.Name.Value,
-                    Description: replaceDescriptionDocsBlocks(source.Description.Value, docsMap),
-                    URI:         file,
-                    Range: lsp.Range{
-                        Start: source.Name.Position,
-                        End:   source.Name.Position,
-                    },
-                }
+	for _, path := range projYaml.ModelPaths.Value {
+		_, err := os.ReadDir(projectRoot + "/" + path)
+		if err != nil {
+			continue
+		}
+		files, _ := util.WalkFilepath(projectRoot+"/"+path+"/", ".yml")
+		for _, file := range files {
+			dbtYml := parsePropertiesYamlFile(file)
+			for _, model := range dbtYml.Models {
+				modelMap[model.Name.Value] = ModelProperties{
+					Name:        model.Name,
+					Description: AnnotatedField[string]{Value: replaceDescriptionDocsBlocks(model.Description.Value, docsMap)},
+					ModelConfig: AnnotatedMap{
+						"alias": AnnotatedField[any]{
+							Value: model.ModelConfig["alias"].Value,
+							Position: lsp.Position{
+								Line:      model.ModelConfig["alias"].Position.Line,
+								Character: model.ModelConfig["alias"].Position.Character,
+							},
+						},
+					},
+					SchemaURI: file,
+				}
+			}
+			for _, source := range dbtYml.Sources {
+				sourceMap[source.Name.Value] = Source{
+					Name:        source.Name.Value,
+					Description: replaceDescriptionDocsBlocks(source.Description.Value, docsMap),
+					URI:         file,
+					Range: lsp.Range{
+						Start: source.Name.Position,
+						End:   source.Name.Position,
+					},
+				}
 
-                if sourceMap[source.Name.Value].Tables == nil {
-                    tmpSM := sourceMap[source.Name.Value]
-                    tmpSM.Tables = make(map[string]SourceTable)
-                    sourceMap[source.Name.Value] = tmpSM
-                }
+				if sourceMap[source.Name.Value].Tables == nil {
+					tmpSM := sourceMap[source.Name.Value]
+					tmpSM.Tables = make(map[string]SourceTable)
+					sourceMap[source.Name.Value] = tmpSM
+				}
 
-                for _, table := range source.Tables {
-                    sourceMap[source.Name.Value].Tables[table.Name.Value] = SourceTable{
-                        Name:        table.Name.Value,
-                        Description: replaceDescriptionDocsBlocks(table.Description.Value, docsMap),
-                        Table:       source.Name.Value,
-                        URI:         file,
-                        Range: lsp.Range{
-                            Start: table.Name.Position,
-                            End:   table.Name.Position,
-                        },
-                    }
-                }
-            }
-        }
-    }
+				for _, table := range source.Tables {
+					sourceMap[source.Name.Value].Tables[table.Name.Value] = SourceTable{
+						Name:        table.Name.Value,
+						Description: replaceDescriptionDocsBlocks(table.Description.Value, docsMap),
+						Table:       source.Name.Value,
+						URI:         file,
+						Range: lsp.Range{
+							Start: table.Name.Position,
+							End:   table.Name.Position,
+						},
+					}
+				}
+			}
+		}
+	}
 
-    return modelMap, sourceMap
+	return modelMap, sourceMap
 }
 
 func replaceDescriptionDocsBlocks(description string, docsMap map[string]Docs) string {
-    docBlocksRegex := regexp.MustCompile(`{{\s*doc\(('|")([-zA-z]+)('|")\)\s*}}`)
+	docBlocksRegex := regexp.MustCompile(`{{\s*doc\(('|")([-zA-z]+)('|")\)\s*}}`)
 
-    matches := docBlocksRegex.FindAllStringSubmatchIndex(description, -1)
-    if len(matches) == 0 {
-        return description
-    }
+	matches := docBlocksRegex.FindAllStringSubmatchIndex(description, -1)
+	if len(matches) == 0 {
+		return description
+	}
 
-    newDescription := description
-    for i := 0; i < len(matches); i++ {
-        docName := description[matches[i][4]:matches[i][5]]
+	newDescription := description
+	for i := 0; i < len(matches); i++ {
+		docName := description[matches[i][4]:matches[i][5]]
 
-        if _, ok := docsMap[docName]; ok {
-            newDescription = newDescription[:matches[i][0]] + docsMap[docName].Content + newDescription[matches[i][1]:]
-        }
-    }
+		if _, ok := docsMap[docName]; ok {
+			newDescription = newDescription[:matches[i][0]] + docsMap[docName].Content + newDescription[matches[i][1]:]
+		}
+	}
 
-    return newDescription
+	return newDescription
 }

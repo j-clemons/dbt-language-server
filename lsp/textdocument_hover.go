@@ -1,19 +1,19 @@
 package lsp
 
 type HoverRequest struct {
-    Request
-    Params HoverParams `json:"params"`
+	Request
+	Params HoverParams `json:"params"`
 }
 
 type HoverParams struct {
-    TextDocumentPositionParams
+	TextDocumentPositionParams
 }
 
 type HoverResponse struct {
-    Response
-    Result HoverResult `json:"result"`
+	Response
+	Result HoverResult `json:"result"`
 }
 
 type HoverResult struct {
-    Contents string `json:"contents"`
+	Contents string `json:"contents"`
 }

@@ -1,10 +1,10 @@
 package lsp
 
 type DidSaveTextDocumentNotification struct {
-    Notification
-    Params DidSaveTextDocumentParams `json:"params"`
+	Notification
+	Params DidSaveTextDocumentParams `json:"params"`
 }
 
 type DidSaveTextDocumentParams struct {
-    TextDocument TextDocumentIdentifier `json:"textDocument"`
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
 }
