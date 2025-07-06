@@ -17,6 +17,9 @@
 - **Functions**: Keep functions focused, use receiver methods for type-specific operations
 - **Formatting**: Use `gofmt` with `gofmt -w .`
 
+## Environment Variables
+- **DBT_PROFILES_DIR**: Absolute path to directory where profiles.yml is located. If not set, defaults to `~/.dbt`
+
 ## Project Structure
 - `/analysis`: Core parsing and state management
 - `/lsp`: Language Server Protocol implementation  

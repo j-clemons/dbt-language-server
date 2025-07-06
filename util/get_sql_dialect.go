@@ -26,7 +26,14 @@ func GetDialect(profileName string, inputDir string) docs.Dialect {
 			log.Println("Error getting home directory:", err)
 			return ""
 		}
-		filePath = filepath.Join(homeDir, ".dbt", "profiles.yml")
+
+		// Check for custom profiles directory via environment variable
+		dbtProfilesDir := os.Getenv("DBT_PROFILES_DIR")
+		if dbtProfilesDir != "" {
+			filePath = filepath.Join(dbtProfilesDir, "profiles.yml")
+		} else {
+			filePath = filepath.Join(homeDir, ".dbt", "profiles.yml")
+		}
 	} else {
 		filePath = filepath.Join(inputDir, ".dbt", "profiles.yml")
 	}
