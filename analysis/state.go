@@ -104,6 +104,75 @@ func (s *State) UpdateDocument(uri, text string) {
 	s.parseDocument(uri, text)
 }
 
+func (s *State) UpdateDocumentIncremental(uri string, changes []lsp.TextDocumentContentChangeEvent) {
+	doc, exists := s.Documents[uri]
+	if !exists {
+		return
+	}
+
+	currentText := doc.Text
+	for _, change := range changes {
+		if change.Range == (lsp.Range{}) {
+			currentText = change.Text
+		} else {
+			currentText = s.applyIncrementalChange(currentText, change)
+		}
+	}
+
+	s.parseDocument(uri, currentText)
+}
+
+func (s *State) applyIncrementalChange(text string, change lsp.TextDocumentContentChangeEvent) string {
+	lines := strings.Split(text, "\n")
+
+	startLine := change.Range.Start.Line
+	startChar := change.Range.Start.Character
+	endLine := change.Range.End.Line
+	endChar := change.Range.End.Character
+
+	if startLine >= len(lines) || endLine >= len(lines) {
+		return text
+	}
+
+	var result strings.Builder
+
+	for i := 0; i < startLine; i++ {
+		result.WriteString(lines[i])
+		result.WriteString("\n")
+	}
+
+	if startLine == endLine {
+		line := lines[startLine]
+		if startChar <= len(line) && endChar <= len(line) {
+			newLine := line[:startChar] + change.Text + line[endChar:]
+			result.WriteString(newLine)
+		} else {
+			result.WriteString(line)
+		}
+	} else {
+		startLineText := ""
+		if startChar <= len(lines[startLine]) {
+			startLineText = lines[startLine][:startChar]
+		} else {
+			startLineText = lines[startLine]
+		}
+
+		endLineText := ""
+		if endChar <= len(lines[endLine]) {
+			endLineText = lines[endLine][endChar:]
+		}
+
+		result.WriteString(startLineText + change.Text + endLineText)
+	}
+
+	for i := endLine + 1; i < len(lines); i++ {
+		result.WriteString("\n")
+		result.WriteString(lines[i])
+	}
+
+	return result.String()
+}
+
 func (s *State) SaveDocument(uri string) {
 	s.refreshDbtContext("")
 }

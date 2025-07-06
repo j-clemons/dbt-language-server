@@ -50,14 +50,15 @@ func NewInitializeResponse(id int) InitializeResponse {
 		},
 		Result: InitializeResult{
 			Capabilities: ServerCapabilities{
-				TextDocumentSync:   1,
+				TextDocumentSync:   2,
 				HoverProvider:      true,
 				DefinitionProvider: true,
 				CompletionProvider: map[string]any{},
 				ExecuteCommandProvider: ExecuteCommandOptions{
 					Commands: []string{"dbt.goToSchema"},
 				},
-			}, ServerInfo: ServerInfo{
+			},
+			ServerInfo: ServerInfo{
 				Name:    "dbt-language-server",
 				Version: "v0.1.0-beta",
 			},

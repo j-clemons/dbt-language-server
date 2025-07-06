@@ -78,9 +78,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 		}
 
 		logger.Printf("Changed: %s", request.Params.TextDocument.URI)
-		for _, change := range request.Params.ContentChanges {
-			state.UpdateDocument(request.Params.TextDocument.URI, change.Text)
-		}
+		state.UpdateDocumentIncremental(request.Params.TextDocument.URI, request.Params.ContentChanges)
 	case "textDocument/hover":
 		var request lsp.HoverRequest
 		if err := json.Unmarshal(contents, &request); err != nil {
