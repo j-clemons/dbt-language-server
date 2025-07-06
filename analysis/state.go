@@ -134,13 +134,10 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
 	case parser.SOURCE:
 		response.Result.Contents = s.DbtContext.SourceDetailMap[cursorToken.Literal].Description
 	case parser.SOURCE_TABLE:
-		prevToken := cursorTokenLL.PrevToken
-		for i := 0; i < 3; i++ {
-			prevToken = prevToken.PrevToken
-		}
-		if prevToken.Token.Type == parser.SOURCE {
-			source := s.DbtContext.SourceDetailMap[prevToken.Token.Literal]
-			sourceTable := s.DbtContext.SourceDetailMap[prevToken.Token.Literal].Tables[cursorToken.Literal]
+		match, tokenLiteral := cursorTokenLL.TokenLookbackMatch(parser.SOURCE, 4)
+		if match {
+			source := s.DbtContext.SourceDetailMap[tokenLiteral]
+			sourceTable := s.DbtContext.SourceDetailMap[tokenLiteral].Tables[cursorToken.Literal]
 
 			response.Result.Contents = fmt.Sprintf(
 				"Source: %s\n%s\n\nTable: %s\n%s",
@@ -158,9 +155,9 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
 		)
 	case parser.MACRO:
 		packageName := Package(s.DbtContext.ProjectYaml.ProjectName.Value)
-		prevToken := cursorTokenLL.PrevToken.PrevToken
-		if prevToken.Token.Type == parser.PACKAGE {
-			packageName = Package(prevToken.Token.Literal)
+		match, tokenLiteral := cursorTokenLL.TokenLookbackMatch(parser.PACKAGE, 2)
+		if match {
+			packageName = Package(tokenLiteral)
 		}
 		response.Result.Contents = s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal].Description
 	default:
@@ -221,12 +218,9 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 			response.Result.Range = source.Range
 		}
 	case parser.SOURCE_TABLE:
-		prevToken := cursorTokenLL.PrevToken
-		for i := 0; i < 3; i++ {
-			prevToken = prevToken.PrevToken
-		}
-		if prevToken.Token.Type == parser.SOURCE {
-			source := s.DbtContext.SourceDetailMap[prevToken.Token.Literal].Tables[cursorToken.Literal]
+		match, tokenLiteral := cursorTokenLL.TokenLookbackMatch(parser.SOURCE, 4)
+		if match {
+			source := s.DbtContext.SourceDetailMap[tokenLiteral].Tables[cursorToken.Literal]
 			if source.Name != "" {
 				response.Result.URI = "file://" + source.URI
 				response.Result.Range = source.Range
@@ -240,9 +234,9 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 		}
 	case parser.MACRO:
 		packageName := Package(s.DbtContext.ProjectYaml.ProjectName.Value)
-		prevToken := cursorTokenLL.PrevToken.PrevToken
-		if prevToken.Token.Type == parser.PACKAGE {
-			packageName = Package(prevToken.Token.Literal)
+		match, tokenLiteral := cursorTokenLL.TokenLookbackMatch(parser.PACKAGE, 2)
+		if match {
+			packageName = Package(tokenLiteral)
 		}
 		macro := s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal]
 		if macro != (Macro{}) {

@@ -249,3 +249,22 @@ func (ti *TokenIndex) FindTokenAtCursor(line, column int) (*TokenLL, error) {
 
 	return nil, errors.New("token does not exist")
 }
+
+func (tl *TokenLL) TokenLookbackMatch(tokenType TokenType, inc int) (bool, string) {
+	if inc <= 0 {
+		return false, ""
+	}
+
+	prevToken := tl.PrevToken
+	for i := 1; i < inc; i++ {
+		if prevToken == nil {
+			return false, ""
+		}
+		prevToken = prevToken.PrevToken
+	}
+
+	if prevToken != nil && prevToken.Token.Type == tokenType {
+		return true, prevToken.Token.Literal
+	}
+	return false, ""
+}
