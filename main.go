@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"io"
 	"log"
 	"os"
@@ -14,7 +15,16 @@ import (
 )
 
 func main() {
-	logger := util.GetLogger("log.txt")
+	debug := flag.Bool("debug", false, "Enable debug logging to log.txt")
+	flag.Parse()
+
+	var logger *log.Logger
+	if *debug {
+		logger = util.GetLogger("log.txt")
+	} else {
+		logger = log.New(io.Discard, "", 0)
+	}
+
 	logger.Println("dbt Language Server Started!")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
