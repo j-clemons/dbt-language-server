@@ -40,3 +40,16 @@ require'lspconfig'.dbt.setup{
   root_dir = require'lspconfig'.util.root_pattern("dbt_project.yml"),
 }
 ```
+
+### Helix
+languages.toml
+```toml
+[language-server.dbt-language-server]
+command = "dbt-language-server"
+
+[[language]]
+name = "dbt"
+scope = "dbt_project.yml"
+file-types = ["sql","yml","yaml"]
+language-servers = ["dbt-language-server"]
+```
