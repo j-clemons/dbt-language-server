@@ -42,7 +42,9 @@ require'lspconfig'.dbt.setup{
 ```
 
 ### Helix
-languages.toml
+
+Add executable to $PATH and add to languages.toml
+
 ```toml
 [language-server.dbt-language-server]
 command = "dbt-language-server"
