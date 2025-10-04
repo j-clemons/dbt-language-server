@@ -26,16 +26,18 @@ dbt specific syntax instead of attempting to be a full SQL parser.
 
 Supported Dialects:
 - Snowflake
+- BigQuery
 
 ## Installation
 
 ### Neovim
 
+Add executable to $PATH
 Configure with your LSP client (e.g., nvim-lspconfig):
 
 ```lua
 require'lspconfig'.dbt.setup{
-  cmd = { "/path/to/dbt-language-server" },
+  cmd = { "dbt-language-server" },
   filetypes = { "sql", "yaml" },
   root_dir = require'lspconfig'.util.root_pattern("dbt_project.yml"),
 }

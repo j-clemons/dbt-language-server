@@ -11,6 +11,8 @@ func (d Dialect) FunctionDocs() map[string]string {
 	switch d {
 	case "snowflake":
 		return SnowflakeFunctions
+	case "bigquery":
+		return BigQueryFunctions
 	default:
 		return map[string]string{}
 	}
