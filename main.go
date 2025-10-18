@@ -3,10 +3,11 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
 	"io"
 	"log"
 	"os"
+
+	flag "github.com/spf13/pflag"
 
 	"github.com/j-clemons/dbt-language-server/analysis"
 	"github.com/j-clemons/dbt-language-server/lsp"
@@ -15,7 +16,11 @@ import (
 )
 
 func main() {
-	debug := flag.Bool("debug", false, "Enable debug logging to log.txt")
+	debug := flag.BoolP("debug", "d", false, "Enable debug logging to log.txt")
+
+	fusion := flag.StringP("fusion", "f", "", "Enable dbt fusion features. Provide an absolute path if default value is not dbt")
+	flag.Lookup("fusion").NoOptDefVal = "dbt"
+
 	flag.Parse()
 
 	var logger *log.Logger
@@ -25,11 +30,21 @@ func main() {
 		logger = log.New(io.Discard, "", 0)
 	}
 
+	useFusion := false
+	if *fusion != "" {
+		fusionValidation, err := util.ValidateFusion(*fusion)
+		useFusion = fusionValidation
+		if err != nil {
+			logger.Println(err)
+		}
+	}
+
 	logger.Println("dbt Language Server Started!")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
 
 	state := analysis.NewState()
+	state.FusionEnabled = useFusion
 	writer := os.Stdout
 
 	for scanner.Scan() {

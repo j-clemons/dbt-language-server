@@ -351,6 +351,7 @@ func expectedTestState() State {
 				},
 			},
 		},
+		FusionEnabled: false,
 	}
 
 	return expectedState

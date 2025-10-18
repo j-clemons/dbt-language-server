@@ -14,8 +14,9 @@ import (
 )
 
 type State struct {
-	Documents  map[string]Document
-	DbtContext DbtContext
+	Documents     map[string]Document
+	DbtContext    DbtContext
+	FusionEnabled bool
 }
 
 type Document struct {
@@ -46,6 +47,7 @@ func NewState() State {
 			MacroDetailMap:    map[Package]map[string]Macro{},
 			VariableDetailMap: map[string]Variable{},
 		},
+		FusionEnabled: false,
 	}
 }
 
