@@ -10,6 +10,7 @@ import (
 	flag "github.com/spf13/pflag"
 
 	"github.com/j-clemons/dbt-language-server/analysis"
+	"github.com/j-clemons/dbt-language-server/analysis/fusion"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/rpc"
 	"github.com/j-clemons/dbt-language-server/util"
@@ -45,6 +46,7 @@ func main() {
 
 	state := analysis.NewState()
 	state.FusionEnabled = useFusion
+	state.FusionPath = *fusion
 	writer := os.Stdout
 
 	for scanner.Scan() {
@@ -85,6 +87,10 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 		state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
 		logger.Printf("Opened: %s", request.Params.TextDocument.URI)
 
+		if state.FusionEnabled {
+			diagnosticsNotification := fusion.FusionCompile(state, request.Params.TextDocument.URI, logger)
+			writeResponse(writer, diagnosticsNotification)
+		}
 	case "textDocument/didSave":
 		logger.Print("textDocument/didSave")
 		var request lsp.DidSaveTextDocumentNotification
@@ -95,6 +101,11 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		logger.Printf("Saved: %s", request.Params.TextDocument.URI)
 		state.SaveDocument(request.Params.TextDocument.URI)
+
+		if state.FusionEnabled {
+			diagnosticsNotification := fusion.FusionCompile(state, request.Params.TextDocument.URI, logger)
+			writeResponse(writer, diagnosticsNotification)
+		}
 	case "textDocument/didChange":
 		var request lsp.TextDocumentDidChangeNotification
 		if err := json.Unmarshal(contents, &request); err != nil {

@@ -17,6 +17,7 @@ type State struct {
 	Documents     map[string]Document
 	DbtContext    DbtContext
 	FusionEnabled bool
+	FusionPath    string
 }
 
 type Document struct {
@@ -48,6 +49,7 @@ func NewState() State {
 			VariableDetailMap: map[string]Variable{},
 		},
 		FusionEnabled: false,
+		FusionPath:    "",
 	}
 }
 
