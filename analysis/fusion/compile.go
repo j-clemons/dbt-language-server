@@ -15,6 +15,7 @@ import (
 	"github.com/j-clemons/dbt-language-server/analysis"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	diagnosticseverity "github.com/j-clemons/dbt-language-server/lsp/diagnosticSeverity"
+	"github.com/j-clemons/dbt-language-server/util"
 )
 
 type FusionLog struct {
@@ -40,24 +41,26 @@ type Info struct {
 	Ts           string
 }
 
-func FusionCompile(s *analysis.State, uri string, logger *log.Logger) lsp.DiagnosticsNotification {
-	diagnostics := compile(s.FusionPath, uri, logger)
-
+func publishDiagnostics(writer io.Writer, uri string, diagnostics []lsp.Diagnostic) {
 	notification := lsp.DiagnosticsNotification{
 		Notification: lsp.Notification{
 			RPC:    "2.0",
 			Method: "textDocument/publishDiagnostics",
 		},
-		Params: diagnostics,
+		Params: lsp.PublishDiagnosticsParams{
+			URI:         uri,
+			Diagnostics: diagnostics,
+			
+		},
 	}
 
-	return notification
+	util.WriteResponse(writer, notification)
 }
 
-func compile(fusionPath string, uri string, logger *log.Logger) lsp.PublishDiagnosticsParams {
+func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.Writer) {
 	selector := dbtModelSelectionFromUri(uri)
 	cmd := exec.Command(
-		fusionPath,
+		s.FusionPath,
 		"compile",
 		"-q",
 		"--static-analysis", "on",
@@ -82,7 +85,16 @@ func compile(fusionPath string, uri string, logger *log.Logger) lsp.PublishDiagn
 	}
 
 	diagnosticsChan := make(chan lsp.Diagnostic, 100)
+	diagnostics := []lsp.Diagnostic{}
+
 	var wg sync.WaitGroup
+
+	go func() {
+		for diagnostic := range diagnosticsChan {
+			diagnostics = append(diagnostics, diagnostic)
+			publishDiagnostics(writer, uri, diagnostics)
+		}
+	}()
 
 	wg.Add(1)
 	go func() {
@@ -101,19 +113,12 @@ func compile(fusionPath string, uri string, logger *log.Logger) lsp.PublishDiagn
 		close(diagnosticsChan)
 	}()
 
-	diagnostics := []lsp.Diagnostic{}
-	for diagnostic := range diagnosticsChan {
-		diagnostics = append(diagnostics, diagnostic)
-	}
 
 	if err := cmd.Wait(); err != nil {
 		logger.Printf("Command failed: %v", err)
 	}
 
-	return lsp.PublishDiagnosticsParams{
-		URI:         uri,
-		Diagnostics: diagnostics,
-	}
+	publishDiagnostics(writer, uri, diagnostics)
 }
 
 func processStream(stream io.Reader, uri string, logger *log.Logger, diagnosticsChan chan lsp.Diagnostic, streamName string) {

@@ -74,7 +74,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 			request.Params.ClientInfo.Version)
 
 		msg := lsp.NewInitializeResponse(request.ID)
-		writeResponse(writer, msg)
+		util.WriteResponse(writer, msg)
 
 		logger.Print("Sent the reply")
 	case "textDocument/didOpen":
@@ -87,10 +87,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 		state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
 		logger.Printf("Opened: %s", request.Params.TextDocument.URI)
 
-		if state.FusionEnabled {
-			diagnosticsNotification := fusion.FusionCompile(state, request.Params.TextDocument.URI, logger)
-			writeResponse(writer, diagnosticsNotification)
-		}
+		fusion.FusionCompile(state, request.Params.TextDocument.URI, logger, writer)
 	case "textDocument/didSave":
 		logger.Print("textDocument/didSave")
 		var request lsp.DidSaveTextDocumentNotification
@@ -102,10 +99,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 		logger.Printf("Saved: %s", request.Params.TextDocument.URI)
 		state.SaveDocument(request.Params.TextDocument.URI)
 
-		if state.FusionEnabled {
-			diagnosticsNotification := fusion.FusionCompile(state, request.Params.TextDocument.URI, logger)
-			writeResponse(writer, diagnosticsNotification)
-		}
+		fusion.FusionCompile(state, request.Params.TextDocument.URI, logger, writer)
 	case "textDocument/didChange":
 		var request lsp.TextDocumentDidChangeNotification
 		if err := json.Unmarshal(contents, &request); err != nil {
@@ -124,7 +118,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		response := state.Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
-		writeResponse(writer, response)
+		util.WriteResponse(writer, response)
 	case "textDocument/definition":
 		logger.Print("textDocument/definition")
 		var request lsp.DefinitionRequest
@@ -135,7 +129,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		response := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
-		writeResponse(writer, response)
+		util.WriteResponse(writer, response)
 	case "textDocument/completion":
 		logger.Print("textDocument/completion")
 		var request lsp.CompletionRequest
@@ -146,7 +140,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		response := state.TextDocumentCompletion(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
-		writeResponse(writer, response)
+		util.WriteResponse(writer, response)
 	case "workspace/executeCommand":
 		logger.Print("workspace/executeCommand")
 		var request lsp.ExecuteCommandRequest
@@ -171,14 +165,9 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 					}
 
 					response := state.GoToSchema(request.ID, uri, position)
-					writeResponse(writer, response)
+					util.WriteResponse(writer, response)
 				}
 			}
 		}
 	}
-}
-
-func writeResponse(writer io.Writer, msg any) {
-	reply := rpc.EncodeMessage(msg)
-	writer.Write([]byte(reply))
 }
