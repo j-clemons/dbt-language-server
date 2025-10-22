@@ -1,6 +1,6 @@
 # dbt Language Server
 
-LSP for dbt core
+LSP for dbt
 
 ## Features
 
@@ -27,6 +27,18 @@ dbt specific syntax instead of attempting to be a full SQL parser.
 Supported Dialects:
 - Snowflake
 - BigQuery
+
+### dbt Fusion Static Analysis
+If you have dbt fusion installed, you can use it for static analysis and the 
+results from compilation will be returned as diagnostics in the editor.
+All artifacts from the compilation will be written to a separate directory from 
+the project you are editing.
+
+Enabled via a cli argument.
+```
+-f, --fusion=[path]
+```
+If path to the dbt fusion executable is not provided, `dbt` will be used and will look for it in `$PATH`.
 
 ## Installation
 
