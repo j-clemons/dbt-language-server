@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -50,7 +52,6 @@ func publishDiagnostics(writer io.Writer, uri string, diagnostics []lsp.Diagnost
 		Params: lsp.PublishDiagnosticsParams{
 			URI:         uri,
 			Diagnostics: diagnostics,
-			
 		},
 	}
 
@@ -59,6 +60,12 @@ func publishDiagnostics(writer io.Writer, uri string, diagnostics []lsp.Diagnost
 
 func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.Writer) {
 	selector := dbtModelSelectionFromUri(uri)
+
+	fusionArtifactPath, err := getFusionArtifactPath()
+	if err != nil {
+		logger.Printf("Failed to get fusion artifact path: %v", err)
+		return
+	}
 	cmd := exec.Command(
 		s.FusionPath,
 		"compile",
@@ -66,6 +73,8 @@ func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.
 		"--static-analysis", "on",
 		"--log-format", "json",
 		"--no-write-json",
+		"--target-path", filepath.Join(fusionArtifactPath, "target"),
+		"--log-path", filepath.Join(fusionArtifactPath, "log"),
 		"--select", selector,
 	)
 	logger.Printf("Running: %v\n", cmd.Args)
@@ -112,7 +121,6 @@ func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.
 		wg.Wait()
 		close(diagnosticsChan)
 	}()
-
 
 	if err := cmd.Wait(); err != nil {
 		logger.Printf("Command failed: %v", err)
@@ -246,4 +254,29 @@ func dbtModelSelectionFromUri(uri string) string {
 	)
 
 	return modelSelector
+}
+
+func getFusionArtifactPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	fusionArtifactPath := filepath.Join(homeDir, ".dbt", "dbt-language-server", "fusion-artifacts")
+
+	if err := os.MkdirAll(fusionArtifactPath, 0755); err != nil {
+		return "", err
+	}
+
+	logDir := filepath.Join(fusionArtifactPath, "log")
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return "", err
+	}
+
+	targetDir := filepath.Join(fusionArtifactPath, "target")
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return "", err
+	}
+
+	return fusionArtifactPath, nil
 }
