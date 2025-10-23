@@ -3,19 +3,25 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
 	"io"
 	"log"
 	"os"
 
+	flag "github.com/spf13/pflag"
+
 	"github.com/j-clemons/dbt-language-server/analysis"
+	"github.com/j-clemons/dbt-language-server/analysis/fusion"
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/rpc"
 	"github.com/j-clemons/dbt-language-server/util"
 )
 
 func main() {
-	debug := flag.Bool("debug", false, "Enable debug logging to log.txt")
+	debug := flag.BoolP("debug", "d", false, "Enable debug logging to log.txt")
+
+	fusion := flag.StringP("fusion", "f", "", "Enable dbt fusion features. Provide an absolute path if default value is not dbt")
+	flag.Lookup("fusion").NoOptDefVal = "dbt"
+
 	flag.Parse()
 
 	var logger *log.Logger
@@ -25,11 +31,22 @@ func main() {
 		logger = log.New(io.Discard, "", 0)
 	}
 
+	useFusion := false
+	if *fusion != "" {
+		fusionValidation, err := util.ValidateFusion(*fusion)
+		useFusion = fusionValidation
+		if err != nil {
+			logger.Println(err)
+		}
+	}
+
 	logger.Println("dbt Language Server Started!")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
 
 	state := analysis.NewState()
+	state.FusionEnabled = useFusion
+	state.FusionPath = *fusion
 	writer := os.Stdout
 
 	for scanner.Scan() {
@@ -57,7 +74,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 			request.Params.ClientInfo.Version)
 
 		msg := lsp.NewInitializeResponse(request.ID)
-		writeResponse(writer, msg)
+		util.WriteResponse(writer, msg)
 
 		logger.Print("Sent the reply")
 	case "textDocument/didOpen":
@@ -70,6 +87,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 		state.OpenDocument(request.Params.TextDocument.URI, request.Params.TextDocument.Text)
 		logger.Printf("Opened: %s", request.Params.TextDocument.URI)
 
+		fusion.FusionCompile(state, request.Params.TextDocument.URI, logger, writer)
 	case "textDocument/didSave":
 		logger.Print("textDocument/didSave")
 		var request lsp.DidSaveTextDocumentNotification
@@ -80,6 +98,8 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		logger.Printf("Saved: %s", request.Params.TextDocument.URI)
 		state.SaveDocument(request.Params.TextDocument.URI)
+
+		fusion.FusionCompile(state, request.Params.TextDocument.URI, logger, writer)
 	case "textDocument/didChange":
 		var request lsp.TextDocumentDidChangeNotification
 		if err := json.Unmarshal(contents, &request); err != nil {
@@ -98,7 +118,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		response := state.Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
-		writeResponse(writer, response)
+		util.WriteResponse(writer, response)
 	case "textDocument/definition":
 		logger.Print("textDocument/definition")
 		var request lsp.DefinitionRequest
@@ -109,7 +129,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		response := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
-		writeResponse(writer, response)
+		util.WriteResponse(writer, response)
 	case "textDocument/completion":
 		logger.Print("textDocument/completion")
 		var request lsp.CompletionRequest
@@ -120,7 +140,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 
 		response := state.TextDocumentCompletion(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
-		writeResponse(writer, response)
+		util.WriteResponse(writer, response)
 	case "workspace/executeCommand":
 		logger.Print("workspace/executeCommand")
 		var request lsp.ExecuteCommandRequest
@@ -145,14 +165,9 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 					}
 
 					response := state.GoToSchema(request.ID, uri, position)
-					writeResponse(writer, response)
+					util.WriteResponse(writer, response)
 				}
 			}
 		}
 	}
-}
-
-func writeResponse(writer io.Writer, msg any) {
-	reply := rpc.EncodeMessage(msg)
-	writer.Write([]byte(reply))
 }
