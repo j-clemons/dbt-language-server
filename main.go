@@ -31,22 +31,23 @@ func main() {
 		logger = log.New(io.Discard, "", 0)
 	}
 
-	useFusion := false
+	state := analysis.NewState()
+	state.FusionEnabled = false
+	state.FusionPath = *fusion
+
 	if *fusion != "" {
-		fusionValidation, err := util.ValidateFusion(*fusion)
-		useFusion = fusionValidation
-		if err != nil {
-			logger.Println(err)
-		}
+		go func() {
+			fusionValidation, err := util.ValidateFusion(*fusion)
+			if err != nil {
+				logger.Println(err)
+			}
+			state.SetFusionEnabled(fusionValidation)
+		}()
 	}
 
 	logger.Println("dbt Language Server Started!")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
-
-	state := analysis.NewState()
-	state.FusionEnabled = useFusion
-	state.FusionPath = *fusion
 	writer := os.Stdout
 
 	for scanner.Scan() {

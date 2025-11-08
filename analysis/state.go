@@ -14,6 +14,7 @@ import (
 )
 
 type State struct {
+	mu            sync.RWMutex
 	Documents     map[string]Document
 	DbtContext    DbtContext
 	FusionEnabled bool
@@ -51,6 +52,18 @@ func NewState() State {
 		FusionEnabled: false,
 		FusionPath:    "",
 	}
+}
+
+func (s *State) SetFusionEnabled(enabled bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.FusionEnabled = enabled
+}
+
+func (s *State) IsFusionEnabled() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.FusionEnabled
 }
 
 func (s *State) refreshDbtContext(wd string) {

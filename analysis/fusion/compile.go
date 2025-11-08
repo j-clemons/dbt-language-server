@@ -59,6 +59,9 @@ func publishDiagnostics(writer io.Writer, uri string, diagnostics []lsp.Diagnost
 }
 
 func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.Writer) {
+	if !s.IsFusionEnabled() {
+		return
+	}
 	selector := dbtModelSelectionFromUri(uri)
 
 	fusionArtifactPath, err := getFusionArtifactPath()
