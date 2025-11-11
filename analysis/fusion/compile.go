@@ -64,7 +64,8 @@ func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.
 	}
 	selector := dbtModelSelectionFromUri(uri)
 
-	fusionArtifactPath, err := getFusionArtifactPath()
+	projectName := s.DbtContext.ProjectYaml.ProjectName.Value
+	fusionArtifactPath, err := getFusionArtifactPath(projectName)
 	if err != nil {
 		logger.Printf("Failed to get fusion artifact path: %v", err)
 		return
@@ -259,13 +260,13 @@ func dbtModelSelectionFromUri(uri string) string {
 	return modelSelector
 }
 
-func getFusionArtifactPath() (string, error) {
+func getFusionArtifactPath(projectName string) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
 
-	fusionArtifactPath := filepath.Join(homeDir, ".dbt", "dbt-language-server", "fusion-artifacts")
+	fusionArtifactPath := filepath.Join(homeDir, ".dbt", "dbt-language-server", "fusion-artifacts", projectName)
 
 	if err := os.MkdirAll(fusionArtifactPath, 0755); err != nil {
 		return "", err
