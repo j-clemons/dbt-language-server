@@ -1,0 +1,75 @@
+#!/bin/bash
+
+set -e
+
+REPO="j-clemons/dbt-language-server"
+API_URL="https://api.github.com/repos/$REPO/releases/latest"
+
+# Detect OS
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+case "$OS" in
+    darwin)
+        OS="darwin"
+        ;;
+    linux)
+        OS="linux"
+        ;;
+    *)
+        echo "Unsupported OS: $OS. This installer supports macOS (Darwin) and Linux."
+        exit 1
+        ;;
+esac
+
+# Detect architecture
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)
+        ARCH="amd64"
+        ;;
+    aarch64|arm64)
+        ARCH="arm64"
+        ;;
+    *)
+        echo "Unsupported architecture: $ARCH. This installer supports x86_64 and arm64."
+        exit 1
+        ;;
+esac
+
+# Check if combination is supported
+if [[ "$OS" == "linux" && "$ARCH" != "amd64" ]]; then
+    echo "Unsupported platform: $OS/$ARCH. Linux is only supported on amd64."
+    exit 1
+fi
+
+BINARY_NAME="dbt-language-server-${OS}-${ARCH}"
+INSTALL_DIR="$HOME/.local/bin"
+INSTALL_PATH="$INSTALL_DIR/dbt-language-server"
+
+echo "Installing $BINARY_NAME to $INSTALL_PATH..."
+
+# Fetch latest release info
+RELEASE_JSON=$(curl -s "$API_URL")
+if [[ -z "$RELEASE_JSON" ]]; then
+    echo "Failed to fetch release information from GitHub."
+    exit 1
+fi
+
+# Extract download URL for the binary
+DOWNLOAD_URL=$(echo "$RELEASE_JSON" | jq -r ".assets[] | select(.name == \"$BINARY_NAME\") | .browser_download_url")
+if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
+    echo "Binary $BINARY_NAME not found in the latest release."
+    exit 1
+fi
+
+# Create install directory
+mkdir -p "$INSTALL_DIR"
+
+# Download the binary
+TEMP_FILE=$(mktemp)
+curl -L -o "$TEMP_FILE" "$DOWNLOAD_URL"
+
+# Move to install location and make executable
+mv "$TEMP_FILE" "$INSTALL_PATH"
+chmod +x "$INSTALL_PATH"
+
+echo "Installation complete! Add $INSTALL_DIR to your PATH if not already done."

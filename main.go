@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 
 	flag "github.com/spf13/pflag"
 
@@ -17,6 +18,16 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "upgrade" {
+		cmd := exec.Command("bash", "-c", "curl -fsSL https://raw.githubusercontent.com/j-clemons/dbt-language-server/main/install | bash")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Fatal("Upgrade failed:", err)
+		}
+		os.Exit(0)
+	}
+
 	debug := flag.BoolP("debug", "d", false, "Enable debug logging to log.txt")
 
 	fusion := flag.StringP("fusion", "f", "", "Enable dbt fusion features. Provide an absolute path if default value is not dbt")

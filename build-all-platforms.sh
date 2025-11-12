@@ -5,8 +5,8 @@ DIST_DIR="dist"
 mkdir -p "$DIST_DIR"
 
 # Define target platforms
+# "windows/amd64" is not fully supported
 PLATFORMS=(
-    "windows/amd64"
     "darwin/amd64"
     "darwin/arm64"
     "linux/amd64"
