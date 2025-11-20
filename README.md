@@ -44,7 +44,7 @@ If path to the dbt fusion executable is not provided, `dbt` will be used and wil
 
 Download [latest release](https://github.com/j-clemons/dbt-language-server/releases/latest) or install via curl
 ```
-curl -fsSL https://raw.githubusercontent.com/j-clemons/dbt-language-server/main/install | bash
+curl -fsSL https://j-clemons.com/dbt-language-server/install | bash
 ```
 
 ### Neovim
