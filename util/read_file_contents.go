@@ -28,7 +28,7 @@ func GetLineAndColumn(input string, idx int) (line, column int) {
 	return line, column
 }
 
-func CreateFileNameMap(fileExt string, root string, paths []string) (map[string]string, error) {
+func CreateFileNameMap(fileExtensions []string, root string, paths []string) (map[string]string, error) {
 	fileMap := make(map[string]string)
 
 	var err error
@@ -39,13 +39,15 @@ func CreateFileNameMap(fileExt string, root string, paths []string) (map[string]
 		if err != nil {
 			continue
 		}
-		validPaths, err := WalkFilepath(path, fileExt)
-		if err != nil {
-			continue
-		}
+		for _, fileExt := range fileExtensions {
+			validPaths, err := WalkFilepath(path, fileExt)
+			if err != nil {
+				continue
+			}
 
-		for _, validPath := range validPaths {
-			fileMap[filepath.Base(validPath)[:len(filepath.Base(validPath))-len(fileExt)]] = validPath
+			for _, validPath := range validPaths {
+				fileMap[filepath.Base(validPath)[:len(filepath.Base(validPath))-len(fileExt)]] = validPath
+			}
 		}
 	}
 
