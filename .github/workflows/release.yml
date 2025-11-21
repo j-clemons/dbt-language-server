@@ -45,7 +45,7 @@ jobs:
         run: chmod +x ./build-all-platforms.sh
       
       - name: Run build script
-        run: ./build-all-platforms.sh
+        run: VERSION=${{ steps.version.outputs.VERSION }} ./build-all-platforms.sh
       
       - name: Create Release
         id: create_release

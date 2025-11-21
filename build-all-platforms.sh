@@ -12,6 +12,8 @@ PLATFORMS=(
     "linux/amd64"
 )
 
+LDFLAGS="-X github.com/j-clemons/dbt-language-server/version.Version=${VERSION:-dev}"
+
 # Build for each platform
 for PLATFORM in "${PLATFORMS[@]}"; do
     OS=$(echo "$PLATFORM" | cut -d'/' -f1)
@@ -24,7 +26,7 @@ for PLATFORM in "${PLATFORMS[@]}"; do
 
     echo "Building for $OS/$ARCH..."
 
-    GOOS=$OS GOARCH=$ARCH go build -o "$DIST_DIR/$OUTPUT_NAME" .
+    GOOS=$OS GOARCH=$ARCH go build -ldflags "$LDFLAGS" -o "$DIST_DIR/$OUTPUT_NAME" .
 
     if [ $? -ne 0 ]; then
         echo "Failed to build for $OS/$ARCH"

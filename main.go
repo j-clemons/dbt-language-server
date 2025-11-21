@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/j-clemons/dbt-language-server/lsp"
 	"github.com/j-clemons/dbt-language-server/rpc"
 	"github.com/j-clemons/dbt-language-server/util"
+	"github.com/j-clemons/dbt-language-server/version"
 )
 
 func main() {
@@ -28,12 +30,18 @@ func main() {
 		os.Exit(0)
 	}
 
+	showVersion := flag.BoolP("version", "v", false, "Print version")
 	debug := flag.BoolP("debug", "d", false, "Enable debug logging to log.txt")
 
 	fusion := flag.StringP("fusion", "f", "", "Enable dbt fusion features. Provide an absolute path if default value is not dbt")
 	flag.Lookup("fusion").NoOptDefVal = "dbt"
 
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version.Version)
+		os.Exit(0)
+	}
 
 	var logger *log.Logger
 	if *debug {
