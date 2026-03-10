@@ -91,6 +91,8 @@ func parseDbtProjectYaml(projectRoot string) DbtProjectYaml {
 
 	}
 
+	fileStr = util.ResolveEnvVars(fileStr)
+
 	var projYaml DbtProjectYaml
 	if err := yaml.Unmarshal([]byte(fileStr), &projYaml); err != nil {
 		fmt.Printf("Failed to unmarshal YAML: %v", err)
