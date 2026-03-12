@@ -45,9 +45,9 @@ func TestResolveEnvVars(t *testing.T) {
 			expected: `profile: ""`,
 		},
 		{
-			name:     "missing env var without default unchanged",
+			name:     "missing env var without default uses fallback",
 			input:    `profile: "{{ env_var("NONEXISTENT_VAR_12345") }}"`,
-			expected: `profile: "{{ env_var("NONEXISTENT_VAR_12345") }}"`,
+			expected: `profile: "DBT_ENV_DEFAULT_NONEXISTENT_VAR_12345"`,
 		},
 		{
 			name:     "no env var expression",
@@ -58,6 +58,11 @@ func TestResolveEnvVars(t *testing.T) {
 			name:     "multiple env vars",
 			input:    `a: "{{ env_var("TEST_DBT_PROFILE") }}" b: "{{ env_var("TEST_DBT_PROFILE") }}"`,
 			expected: `a: "my_profile" b: "my_profile"`,
+		},
+		{
+			name:     "multiple missing env vars use distinct fallbacks",
+			input:    `a: "{{ env_var("MISSING_A") }}" b: "{{ env_var("MISSING_B") }}"`,
+			expected: `a: "DBT_ENV_DEFAULT_MISSING_A" b: "DBT_ENV_DEFAULT_MISSING_B"`,
 		},
 	}
 

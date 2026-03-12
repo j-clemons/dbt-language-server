@@ -1,6 +1,7 @@
 package util
 
 import (
+	"log"
 	"os"
 	"regexp"
 )
@@ -22,6 +23,8 @@ func ResolveEnvVars(input string) string {
 			return defaultValue
 		}
 
-		return match
+		fallback := "DBT_ENV_DEFAULT_" + varName
+		log.Println("env var not set, using fallback:", fallback)
+		return fallback
 	})
 }
