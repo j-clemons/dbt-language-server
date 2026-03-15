@@ -161,6 +161,22 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 		response := state.TextDocumentCompletion(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 
 		util.WriteResponse(writer, response)
+	case "shutdown":
+		var request lsp.Request
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("shutdown: %s", err)
+			return
+		}
+
+		logger.Print("Received shutdown request")
+		response := lsp.Response{
+			RPC: "2.0",
+			ID:  &request.ID,
+		}
+		util.WriteResponse(writer, response)
+	case "exit":
+		logger.Print("Received exit notification")
+		os.Exit(0)
 	case "workspace/executeCommand":
 		logger.Print("workspace/executeCommand")
 		var request lsp.ExecuteCommandRequest
