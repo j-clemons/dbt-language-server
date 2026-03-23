@@ -9,6 +9,7 @@ type InitializeRequest struct {
 
 type InitializeRequestParams struct {
 	ClientInfo ClientInfo `json:"clientInfo"`
+	RootPath   string     `json:"rootPath"`
 }
 
 type ClientInfo struct {
