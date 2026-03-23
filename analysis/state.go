@@ -14,11 +14,12 @@ import (
 )
 
 type State struct {
-	mu            sync.RWMutex
-	Documents     map[string]Document
-	DbtContext    DbtContext
-	FusionEnabled bool
-	FusionPath    string
+	mu                sync.RWMutex
+	Documents         map[string]Document
+	DbtContext        DbtContext
+	FusionEnabled     bool
+	FusionPath        string
+	LspClientRootPath string
 }
 
 type Document struct {
@@ -49,8 +50,9 @@ func NewState() State {
 			MacroDetailMap:    map[Package]map[string]Macro{},
 			VariableDetailMap: map[string]Variable{},
 		},
-		FusionEnabled: false,
-		FusionPath:    "",
+		FusionEnabled:     false,
+		FusionPath:        "",
+		LspClientRootPath: "",
 	}
 }
 
@@ -113,7 +115,7 @@ func (s *State) parseDocument(uri, text string) {
 }
 
 func (s *State) OpenDocument(uri, text string) {
-	s.refreshDbtContext("")
+	s.refreshDbtContext(s.LspClientRootPath)
 	s.parseDocument(uri, text)
 }
 
@@ -191,7 +193,7 @@ func (s *State) applyIncrementalChange(text string, change lsp.TextDocumentConte
 }
 
 func (s *State) SaveDocument(uri string) {
-	s.refreshDbtContext("")
+	s.refreshDbtContext(s.LspClientRootPath)
 }
 
 func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverResponse {

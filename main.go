@@ -89,12 +89,15 @@ func handleMessage(logger *log.Logger, writer io.Writer, state *analysis.State, 
 			logger.Printf("Could not parse: %s", err)
 		}
 
-		logger.Printf("Connected to: %s %s",
+		logger.Printf("Connected to: %s %s %s",
 			request.Params.ClientInfo.Name,
-			request.Params.ClientInfo.Version)
+			request.Params.ClientInfo.Version,
+			request.Params.RootPath,
+		)
 
 		msg := lsp.NewInitializeResponse(request.ID)
 		util.WriteResponse(writer, msg)
+		state.LspClientRootPath = request.Params.RootPath
 
 		logger.Print("Sent the reply")
 	case "textDocument/didOpen":
