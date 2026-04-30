@@ -287,7 +287,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 	case parser.REF:
 		model := s.DbtContext.ModelDetailMap[cursorToken.Literal]
 		if model != (ModelDetails{}) {
-			response.Result.URI = "file://" + model.URI
+			response.Result.URI = util.PathToFileURI(model.URI)
 			response.Result.Range = lsp.Range{
 				Start: lsp.Position{
 					Line:      0,
@@ -302,7 +302,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 	case parser.SOURCE:
 		source := s.DbtContext.SourceDetailMap[cursorToken.Literal]
 		if source.Name != "" {
-			response.Result.URI = "file://" + source.URI
+			response.Result.URI = util.PathToFileURI(source.URI)
 			response.Result.Range = source.Range
 		}
 	case parser.SOURCE_TABLE:
@@ -310,14 +310,14 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 		if match {
 			source := s.DbtContext.SourceDetailMap[tokenLiteral].Tables[cursorToken.Literal]
 			if source.Name != "" {
-				response.Result.URI = "file://" + source.URI
+				response.Result.URI = util.PathToFileURI(source.URI)
 				response.Result.Range = source.Range
 			}
 		}
 	case parser.VAR:
 		variable := s.DbtContext.VariableDetailMap[cursorToken.Literal]
 		if variable != (Variable{}) {
-			response.Result.URI = "file://" + variable.URI
+			response.Result.URI = util.PathToFileURI(variable.URI)
 			response.Result.Range = variable.Range
 		}
 	case parser.MACRO:
@@ -328,7 +328,7 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 		}
 		macro := s.DbtContext.MacroDetailMap[packageName][cursorToken.Literal]
 		if macro != (Macro{}) {
-			response.Result.URI = "file://" + macro.URI
+			response.Result.URI = util.PathToFileURI(macro.URI)
 			response.Result.Range = macro.Range
 		}
 	default:
@@ -373,7 +373,7 @@ func (s *State) GoToSchema(id int, uri string, position lsp.Position) lsp.Execut
 				model, modelExists := s.DbtContext.ModelDetailMap[cursorToken.Literal]
 				if modelExists && model.SchemaURI != "" {
 					response.Result = lsp.Location{
-						URI:   "file://" + model.SchemaURI,
+						URI:   util.PathToFileURI(model.SchemaURI),
 						Range: model.SchemaRange,
 					}
 					return response
@@ -389,7 +389,7 @@ func (s *State) GoToSchema(id int, uri string, position lsp.Position) lsp.Execut
 		model, modelExists := s.DbtContext.ModelDetailMap[modelName]
 		if modelExists && model.SchemaURI != "" {
 			response.Result = lsp.Location{
-				URI:   "file://" + model.SchemaURI,
+				URI:   util.PathToFileURI(model.SchemaURI),
 				Range: model.SchemaRange,
 			}
 		}
@@ -398,8 +398,7 @@ func (s *State) GoToSchema(id int, uri string, position lsp.Position) lsp.Execut
 }
 
 func getModelNameFromURI(uri string) string {
-	// Remove file:// prefix if present
-	cleanURI := strings.TrimPrefix(uri, "file://")
+	cleanURI := util.FileURIToPath(uri)
 
 	// Get the base filename without extension
 	baseName := filepath.Base(cleanURI)
