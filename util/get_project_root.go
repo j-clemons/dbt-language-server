@@ -34,7 +34,7 @@ func findFileDirAsc(fileName string, startPath string) (string, error) {
 				return path, nil
 			}
 		}
-		if path == "/" {
+		if filepath.Dir(path) == path {
 			return "", fmt.Errorf("File %s not found", fileName)
 		}
 

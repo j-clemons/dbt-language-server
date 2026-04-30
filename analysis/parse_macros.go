@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -57,7 +58,7 @@ func parseMacros(projectRoot string, dbtProjectYaml DbtProjectYaml) ([]Macro, er
 
 	var err error
 	for _, p := range dbtProjectYaml.MacroPaths.Value {
-		path := projectRoot + "/" + p
+		path := filepath.Join(projectRoot, p)
 		_, err = os.ReadDir(path)
 		if err != nil {
 			continue
