@@ -32,6 +32,11 @@ func main() {
 	fusion := flag.StringP("fusion", "f", "", "Enable dbt fusion features. Provide an absolute path if default value is not dbt")
 	flag.Lookup("fusion").NoOptDefVal = "dbt"
 
+	dbtCore := flag.StringP("dbt-core", "c", "", "Enable dbt-core backend: read manifest.json for richer metadata. Optionally provide the path to the dbt binary (default: 'dbt')")
+	flag.Lookup("dbt-core").NoOptDefVal = "dbt"
+
+	dbtCoreParse := flag.BoolP("dbt-core-parse", "p", false, "Run 'dbt parse' on every save to keep the manifest current (requires --dbt-core)")
+
 	flag.Parse()
 
 	if *showVersion {
@@ -47,6 +52,7 @@ func main() {
 	}
 
 	state := analysis.NewState()
+	state.SetLogger(logger)
 	state.FusionEnabled = false
 	state.FusionPath = *fusion
 
@@ -58,6 +64,11 @@ func main() {
 			}
 			state.SetFusionEnabled(fusionValidation)
 		}()
+	}
+
+	if *dbtCore != "" {
+		state.DbtCorePath = *dbtCore
+		state.DbtCoreRunOnSave = *dbtCoreParse
 	}
 
 	logger.Println("dbt Language Server Started!")

@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -20,6 +21,15 @@ type State struct {
 	FusionEnabled     bool
 	FusionPath        string
 	LspClientRootPath string
+	// DbtCorePath, when non-empty, enables the dbt-core backend: manifest.json
+	// is read from <project_root>/target/manifest.json and used in place of
+	// the static file parser for models, sources and macros.
+	DbtCorePath string
+	// DbtCoreRunOnSave, when true, executes `dbt parse` on every save before
+	// reading the manifest so the data is always current. Requires DbtCorePath.
+	DbtCoreRunOnSave bool
+	// logger is used by the dbt-core parse runner; set during initialisation.
+	logger *log.Logger
 }
 
 type Document struct {
@@ -53,7 +63,13 @@ func NewState() State {
 		FusionEnabled:     false,
 		FusionPath:        "",
 		LspClientRootPath: "",
+		DbtCorePath:      "",
+		DbtCoreRunOnSave: false,
 	}
+}
+
+func (s *State) SetLogger(logger *log.Logger) {
+	s.logger = logger
 }
 
 func (s *State) SetFusionEnabled(enabled bool) {
@@ -74,13 +90,46 @@ func (s *State) refreshDbtContext(wd string) {
 	s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
 	s.DbtContext.Dialect = util.GetDialect(s.DbtContext.ProjectYaml.Profile.Value, wd)
 
+	logger := s.logger
+	if logger == nil {
+		logger = log.New(log.Writer(), "", log.LstdFlags)
+	}
+
 	var wg sync.WaitGroup
-	wg.Add(3)
 
 	var modelMap map[string]ModelDetails
 	var sourceMap map[string]Source
 	var macroMap map[Package]map[string]Macro
 	var varMap map[string]Variable
+
+	if s.DbtCorePath != "" {
+		// dbt-core mode: optionally refresh the manifest then read it.
+		if s.DbtCoreRunOnSave {
+			if err := runDbtParse(s.DbtCorePath, s.DbtContext.ProjectRoot, logger); err != nil {
+				logger.Printf("dbt-core: %v", err)
+			}
+		}
+
+		manifest, err := readManifest(s.DbtContext.ProjectRoot)
+		if err == nil {
+			modelMap, sourceMap, macroMap = buildContextFromManifest(
+				manifest,
+				s.DbtContext.ProjectRoot,
+				s.DbtContext.ProjectYaml,
+			)
+			// Variables are not stored in the manifest; always use static parser.
+			varMap = s.getProjectVariables()
+			s.DbtContext.ModelDetailMap = modelMap
+			s.DbtContext.SourceDetailMap = sourceMap
+			s.DbtContext.MacroDetailMap = macroMap
+			s.DbtContext.VariableDetailMap = varMap
+			return
+		}
+		logger.Printf("dbt-core: manifest not found (%v), falling back to static analysis", err)
+	}
+
+	// Static analysis (default path, or fallback when manifest is absent).
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
