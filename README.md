@@ -74,3 +74,9 @@ scope = "dbt_project.yml"
 file-types = ["sql","yml","yaml"]
 language-servers = ["dbt-language-server"]
 ```
+
+### Zed
+
+Search Extensions -> dbt and install.
+
+Source for the extension: [zed-dbt](https://github.com/kylejbrk/zed-dbt)
