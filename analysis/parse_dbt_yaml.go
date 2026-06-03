@@ -206,11 +206,11 @@ func parseYamlModels(projectRoot string, projYaml DbtProjectYaml) (map[string]Mo
 	docsMap := processDocsFiles(docsFiles)
 
 	for _, path := range projYaml.ModelPaths.Value {
-		_, err := os.ReadDir(projectRoot + "/" + path)
+		_, err := os.ReadDir(filepath.Join(projectRoot, path))
 		if err != nil {
 			continue
 		}
-		files, _ := util.WalkFilepath(projectRoot+"/"+path+"/", ".yml")
+		files, _ := util.WalkFilepath(filepath.Join(projectRoot, path), ".yml")
 		for _, file := range files {
 			dbtYml := parsePropertiesYamlFile(file)
 			for _, model := range dbtYml.Models {

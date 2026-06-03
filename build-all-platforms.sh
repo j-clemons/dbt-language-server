@@ -5,11 +5,11 @@ DIST_DIR="dist"
 mkdir -p "$DIST_DIR"
 
 # Define target platforms
-# "windows/amd64" is not fully supported
 PLATFORMS=(
     "darwin/amd64"
     "darwin/arm64"
     "linux/amd64"
+    "windows/amd64"
 )
 
 LDFLAGS="-X github.com/j-clemons/dbt-language-server/version.Version=${VERSION:-dev}"
