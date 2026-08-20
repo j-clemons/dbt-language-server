@@ -77,7 +77,7 @@ func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.
 	documentRelativePath := strings.TrimPrefix(selector, "path:")
 
 	projectName := s.DbtContext.ProjectYaml.ProjectName.Value
-	fusionArtifactPath, err := getFusionArtifactPath(projectName)
+	fusionArtifactPath, err := getFusionArtifactPath(s.DbtContext.ProjectRoot, projectName)
 	if err != nil {
 		logger.Printf("Failed to get fusion artifact path: %v", err)
 		return
@@ -439,27 +439,59 @@ func filePathFromURI(uri string) (string, error) {
 	return filepath.Clean(filePath), nil
 }
 
-func getFusionArtifactPath(projectName string) (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
+func getFusionArtifactPath(projectRoot string, projectName string) (string, error) {
+	if err := validateArtifactProjectName(projectName); err != nil {
 		return "", err
 	}
 
-	fusionArtifactPath := filepath.Join(homeDir, ".dbt", "dbt-language-server", "fusion-artifacts", projectName)
+	homeDir, err := os.UserHomeDir()
+	var artifactRoot string
+	if err == nil {
+		artifactRoot = filepath.Join(homeDir, ".dbt", "dbt-language-server", "fusion-artifacts")
+	} else {
+		if projectRoot == "" {
+			return "", fmt.Errorf("resolve home directory for Fusion artifacts and dbt project root is empty: %w", err)
+		}
+		absoluteProjectRoot, pathErr := filepath.Abs(projectRoot)
+		if pathErr != nil {
+			return "", fmt.Errorf("resolve dbt project root %q for Fusion artifacts: %w", projectRoot, pathErr)
+		}
+		artifactRoot = filepath.Join(
+			absoluteProjectRoot,
+			"target",
+			".dbt-language-server",
+			"fusion-artifacts",
+		)
+	}
+
+	fusionArtifactPath := filepath.Join(artifactRoot, projectName)
 
 	if err := os.MkdirAll(fusionArtifactPath, 0755); err != nil {
-		return "", err
+		return "", fmt.Errorf("create Fusion artifact directory %q: %w", fusionArtifactPath, err)
 	}
 
 	logDir := filepath.Join(fusionArtifactPath, "log")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return "", err
+		return "", fmt.Errorf("create Fusion log directory %q: %w", logDir, err)
 	}
 
 	targetDir := filepath.Join(fusionArtifactPath, "target")
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		return "", err
+		return "", fmt.Errorf("create Fusion target directory %q: %w", targetDir, err)
 	}
 
 	return fusionArtifactPath, nil
+}
+
+func validateArtifactProjectName(projectName string) error {
+	if projectName == "" {
+		return fmt.Errorf("dbt project name is empty")
+	}
+	if projectName == "." || projectName == ".." ||
+		filepath.IsAbs(projectName) ||
+		filepath.Clean(projectName) != projectName ||
+		strings.ContainsAny(projectName, `/\:`) {
+		return fmt.Errorf("dbt project name %q is not safe for Fusion artifact paths", projectName)
+	}
+	return nil
 }

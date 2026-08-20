@@ -75,6 +75,106 @@ func fileURIForPath(path string) string {
 	return (&url.URL{Scheme: "file", Path: uriPath}).String()
 }
 
+func assertDirectoryExists(t *testing.T, path string) {
+	t.Helper()
+
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("expected directory %q: %v", path, err)
+	}
+	if !fileInfo.IsDir() {
+		t.Fatalf("expected %q to be a directory", path)
+	}
+}
+
+func TestGetFusionArtifactPathUsesHome(t *testing.T) {
+	tempDir := makeLocalTempDir(t)
+	homeDir := filepath.Join(tempDir, "home")
+	projectRoot := filepath.Join(tempDir, "repository", "dbt")
+	setHomeEnvironment(t, homeDir)
+
+	artifactPath, err := getFusionArtifactPath(projectRoot, "nested_project")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedPath := filepath.Join(
+		homeDir,
+		".dbt",
+		"dbt-language-server",
+		"fusion-artifacts",
+		"nested_project",
+	)
+	if artifactPath != expectedPath {
+		t.Fatalf("expected artifact path %q, got %q", expectedPath, artifactPath)
+	}
+	assertDirectoryExists(t, artifactPath)
+	assertDirectoryExists(t, filepath.Join(artifactPath, "log"))
+	assertDirectoryExists(t, filepath.Join(artifactPath, "target"))
+}
+
+func TestGetFusionArtifactPathFallsBackToProjectWithoutHome(t *testing.T) {
+	tempDir := makeLocalTempDir(t)
+	projectRoot := filepath.Join(tempDir, "repository", "dbt")
+	if err := os.MkdirAll(projectRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+	clearHomeEnvironment(t)
+
+	artifactPath, err := getFusionArtifactPath(projectRoot, "nested_project")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedPath := filepath.Join(
+		projectRoot,
+		"target",
+		".dbt-language-server",
+		"fusion-artifacts",
+		"nested_project",
+	)
+	if artifactPath != expectedPath {
+		t.Fatalf("expected artifact path %q, got %q", expectedPath, artifactPath)
+	}
+	assertDirectoryExists(t, artifactPath)
+	assertDirectoryExists(t, filepath.Join(artifactPath, "log"))
+	assertDirectoryExists(t, filepath.Join(artifactPath, "target"))
+}
+
+func TestGetFusionArtifactPathRejectsUnsafeProjectName(t *testing.T) {
+	tempDir := makeLocalTempDir(t)
+	setHomeEnvironment(t, filepath.Join(tempDir, "home"))
+
+	for _, projectName := range []string{"", ".", "..", "../escape", `..\escape`, "nested/project", `nested\project`, "C:escape"} {
+		t.Run(projectName, func(t *testing.T) {
+			_, err := getFusionArtifactPath(filepath.Join(tempDir, "repository", "dbt"), projectName)
+			if err == nil {
+				t.Fatalf("expected unsafe project name %q to be rejected", projectName)
+			}
+		})
+	}
+}
+
+func TestGetFusionArtifactPathReturnsDirectoryCreationError(t *testing.T) {
+	tempDir := makeLocalTempDir(t)
+	homeDir := filepath.Join(tempDir, "home")
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(homeDir, ".dbt"), []byte("not a directory\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	setHomeEnvironment(t, homeDir)
+
+	_, err := getFusionArtifactPath(filepath.Join(tempDir, "repository", "dbt"), "nested_project")
+	if err == nil {
+		t.Fatal("expected directory creation error")
+	}
+	if !strings.Contains(err.Error(), "create Fusion artifact directory") {
+		t.Fatalf("expected descriptive directory creation error, got %v", err)
+	}
+}
+
 func TestBuildFusionCompileCommand(t *testing.T) {
 	tests := []struct {
 		name              string
