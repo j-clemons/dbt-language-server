@@ -46,6 +46,25 @@ func writeProfiles(t *testing.T, profilesDir string, dialect string) string {
 	return profilesPath
 }
 
+func clearTestHomeEnvironment(t *testing.T) {
+	t.Helper()
+
+	t.Setenv("HOME", "")
+	t.Setenv("USERPROFILE", "")
+	t.Setenv("HOMEDRIVE", "")
+	t.Setenv("HOMEPATH", "")
+}
+
+func setTestHomeEnvironment(t *testing.T, homeDir string) {
+	t.Helper()
+
+	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
+	volume := filepath.VolumeName(homeDir)
+	t.Setenv("HOMEDRIVE", volume)
+	t.Setenv("HOMEPATH", strings.TrimPrefix(homeDir, volume))
+}
+
 func TestResolveProfilesPathConfiguredDirectoryPrecedence(t *testing.T) {
 	tempDir := makeLocalTempDir(t)
 	projectRoot := filepath.Join(tempDir, "repository", "dbt")
@@ -92,7 +111,7 @@ func TestResolveProfilesPathFallbacks(t *testing.T) {
 	projectRoot := filepath.Join(tempDir, "repository", "dbt")
 	homeDir := filepath.Join(tempDir, "home")
 	t.Setenv("DBT_PROFILES_DIR", "")
-	t.Setenv("HOME", homeDir)
+	setTestHomeEnvironment(t, homeDir)
 
 	projectProfilesPath := writeProfiles(t, projectRoot, "bigquery")
 	compatibilityProfilesPath := writeProfiles(t, filepath.Join(projectRoot, ".dbt"), "duckdb")
@@ -126,6 +145,44 @@ func TestResolveProfilesPathFallbacks(t *testing.T) {
 	}
 	if profilesPath != homeProfilesPath {
 		t.Fatalf("expected home profiles %q, got %q", homeProfilesPath, profilesPath)
+	}
+}
+
+func TestResolveProfilesPathProjectProfilesWithoutHome(t *testing.T) {
+	tests := []struct {
+		name              string
+		profilesDirForDBT func(projectRoot string) string
+	}{
+		{
+			name: "project root",
+			profilesDirForDBT: func(projectRoot string) string {
+				return projectRoot
+			},
+		},
+		{
+			name: "project dot dbt",
+			profilesDirForDBT: func(projectRoot string) string {
+				return filepath.Join(projectRoot, ".dbt")
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := makeLocalTempDir(t)
+			projectRoot := filepath.Join(tempDir, "repository", "dbt")
+			expectedPath := writeProfiles(t, test.profilesDirForDBT(projectRoot), "bigquery")
+			t.Setenv("DBT_PROFILES_DIR", "")
+			clearTestHomeEnvironment(t)
+
+			profilesPath, err := ResolveProfilesPath(projectRoot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if profilesPath != expectedPath {
+				t.Fatalf("expected project profiles %q, got %q", expectedPath, profilesPath)
+			}
+		})
 	}
 }
 

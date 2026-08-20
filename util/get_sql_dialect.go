@@ -63,12 +63,6 @@ func ResolveProfilesPath(inputDir string) (string, error) {
 		)
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve home directory for dbt profiles: %w", err)
-	}
-	candidates = append(candidates, filepath.Join(homeDir, ".dbt", "profiles.yml"))
-
 	for _, candidate := range candidates {
 		exists, err := profilesFileExists(candidate)
 		if err != nil {
@@ -79,6 +73,20 @@ func ResolveProfilesPath(inputDir string) (string, error) {
 		}
 	}
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve home directory for dbt profiles after searching %v: %w", candidates, err)
+	}
+	homeProfilesPath := filepath.Join(homeDir, ".dbt", "profiles.yml")
+	exists, err := profilesFileExists(homeProfilesPath)
+	if err != nil {
+		return "", err
+	}
+	if exists {
+		return homeProfilesPath, nil
+	}
+
+	candidates = append(candidates, homeProfilesPath)
 	return "", fmt.Errorf("profiles.yml not found; searched %v", candidates)
 }
 

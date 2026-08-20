@@ -22,11 +22,15 @@ func findFileDir(fileName string, startPath string) (string, error) {
 }
 
 func findFileDirAsc(fileName string, startPath string) (string, error) {
-	path := startPath
+	path, err := filepath.Abs(startPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve search path %q: %w", startPath, err)
+	}
+
 	for {
 		files, err := os.ReadDir(path)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("read directory %q while searching for %q: %w", path, fileName, err)
 		}
 
 		for _, file := range files {
@@ -34,11 +38,13 @@ func findFileDirAsc(fileName string, startPath string) (string, error) {
 				return path, nil
 			}
 		}
-		if path == "/" {
-			return "", fmt.Errorf("File %s not found", fileName)
+
+		parent := filepath.Dir(path)
+		if parent == path {
+			return "", fmt.Errorf("file %q not found from %q", fileName, startPath)
 		}
 
-		path = filepath.Dir(path)
+		path = parent
 	}
 }
 
@@ -50,7 +56,7 @@ func findFileDirDesc(fileName string, startPath string) (string, error) {
 
 		dirEntries, err := os.ReadDir(path)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("read directory %q while searching for %q: %w", path, fileName, err)
 		}
 
 		for _, entry := range dirEntries {
@@ -62,12 +68,17 @@ func findFileDirDesc(fileName string, startPath string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("fileName not found in descending search.")
+	return "", fmt.Errorf("file %q not found below %q", fileName, startPath)
 }
 
 func GetProjectRoot(projFile string, wd string) string {
 	if wd == "" {
-		wd, _ = os.Getwd()
+		var err error
+		wd, err = os.Getwd()
+		if err != nil {
+			log.Printf("Failed to get working directory while searching for %q: %v", projFile, err)
+			return ""
+		}
 	}
 	dir, err := findFileDir(projFile, wd)
 	if err != nil {
