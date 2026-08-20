@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -362,6 +363,7 @@ func TestRefreshDbtContext(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Setenv("DBT_PROFILES_DIR", "")
 
 	expectedState := expectedTestState()
 
@@ -370,6 +372,63 @@ func TestRefreshDbtContext(t *testing.T) {
 
 	if !reflect.DeepEqual(state, expectedState) {
 		t.Fatalf("expected %#v,\n\ngot %#v", expectedState, state)
+	}
+}
+
+func TestRefreshDbtContextUsesNestedProjectRootForProfiles(t *testing.T) {
+	tempDir, err := os.MkdirTemp(".", ".state-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("remove temp dir: %v", err)
+		}
+	})
+	tempDir, err = filepath.Abs(tempDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	workspaceRoot := filepath.Join(tempDir, "repository")
+	projectRoot := filepath.Join(workspaceRoot, "dbt")
+	modelsDir := filepath.Join(projectRoot, "models")
+	if err := os.MkdirAll(modelsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	projectYaml := `name: nested_project
+profile: nested_profile
+model-paths: ["models"]
+`
+	if err := os.WriteFile(filepath.Join(projectRoot, "dbt_project.yml"), []byte(projectYaml), 0644); err != nil {
+		t.Fatal(err)
+	}
+	profilesYaml := `nested_profile:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+`
+	if err := os.WriteFile(filepath.Join(projectRoot, "profiles.yml"), []byte(profilesYaml), 0644); err != nil {
+		t.Fatal(err)
+	}
+	modelPath := filepath.Join(modelsDir, "nested_model.sql")
+	if err := os.WriteFile(modelPath, []byte("select 1\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DBT_PROFILES_DIR", "")
+
+	state := NewState()
+	state.refreshDbtContext(workspaceRoot)
+
+	if state.DbtContext.ProjectRoot != projectRoot {
+		t.Fatalf("expected project root %q, got %q", projectRoot, state.DbtContext.ProjectRoot)
+	}
+	if state.DbtContext.Dialect != docs.Dialect("bigquery") {
+		t.Fatalf("expected bigquery dialect, got %q", state.DbtContext.Dialect)
+	}
+	if state.DbtContext.ModelDetailMap["nested_model"].URI != modelPath {
+		t.Fatalf("expected nested model %q, got %#v", modelPath, state.DbtContext.ModelDetailMap["nested_model"])
 	}
 }
 

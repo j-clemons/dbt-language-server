@@ -72,7 +72,7 @@ func (s *State) refreshDbtContext(wd string) {
 	s.DbtContext.ProjectRoot = util.GetProjectRoot("dbt_project.yml", wd)
 
 	s.DbtContext.ProjectYaml = parseDbtProjectYaml(s.DbtContext.ProjectRoot)
-	s.DbtContext.Dialect = util.GetDialect(s.DbtContext.ProjectYaml.Profile.Value, wd)
+	s.DbtContext.Dialect = util.GetDialect(s.DbtContext.ProjectYaml.Profile.Value, s.DbtContext.ProjectRoot)
 
 	var wg sync.WaitGroup
 	wg.Add(3)

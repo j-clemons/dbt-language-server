@@ -70,31 +70,34 @@ func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.
 		logger.Printf("Failed to get fusion artifact path: %v", err)
 		return
 	}
-	cmd := exec.Command(
+
+	cmd, err := buildFusionCompileCommand(
 		s.FusionPath,
-		"compile",
-		"-q",
-		"--static-analysis", "on",
-		"--log-format", "json",
-		"--no-write-json",
-		"--target-path", filepath.Join(fusionArtifactPath, "target"),
-		"--log-path", filepath.Join(fusionArtifactPath, "log"),
-		"--select", selector,
+		s.DbtContext.ProjectRoot,
+		selector,
+		fusionArtifactPath,
 	)
+	if err != nil {
+		logger.Printf("Failed to construct Fusion compile command: %v", err)
+		return
+	}
 	logger.Printf("Running: %v\n", cmd.Args)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		logger.Println(err)
+		logger.Printf("Failed to open Fusion stdout: %v", err)
+		return
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		logger.Println(err)
+		logger.Printf("Failed to open Fusion stderr: %v", err)
+		return
 	}
 
 	if err := cmd.Start(); err != nil {
-		logger.Println(err)
+		logger.Printf("Failed to start Fusion compile: %v", err)
+		return
 	}
 
 	diagnosticsChan := make(chan lsp.Diagnostic, 100)
@@ -131,6 +134,40 @@ func FusionCompile(s *analysis.State, uri string, logger *log.Logger, writer io.
 	}
 
 	publishDiagnostics(writer, uri, diagnostics)
+}
+
+func buildFusionCompileCommand(fusionPath string, projectRoot string, selector string, artifactPath string) (*exec.Cmd, error) {
+	if projectRoot == "" {
+		return nil, fmt.Errorf("dbt project root is empty")
+	}
+
+	args := []string{
+		"compile",
+		"-q",
+		"--static-analysis", "on",
+		"--log-format", "json",
+		"--no-write-json",
+		"--project-dir", projectRoot,
+	}
+
+	profilesDir, configured, err := util.ResolveConfiguredProfilesDir()
+	if err != nil {
+		return nil, fmt.Errorf("resolve DBT_PROFILES_DIR: %w", err)
+	}
+	if configured {
+		args = append(args, "--profiles-dir", profilesDir)
+	}
+
+	args = append(
+		args,
+		"--target-path", filepath.Join(artifactPath, "target"),
+		"--log-path", filepath.Join(artifactPath, "log"),
+		"--select", selector,
+	)
+
+	cmd := exec.Command(fusionPath, args...)
+	cmd.Dir = projectRoot
+	return cmd, nil
 }
 
 func processStream(stream io.Reader, uri string, logger *log.Logger, diagnosticsChan chan lsp.Diagnostic, streamName string) {
