@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -370,6 +371,44 @@ func TestRefreshDbtContext(t *testing.T) {
 
 	if !reflect.DeepEqual(state, expectedState) {
 		t.Fatalf("expected %#v,\n\ngot %#v", expectedState, state)
+	}
+}
+
+func TestRefreshDbtContextUsesDiscoveredProjectRootForProfiles(t *testing.T) {
+	workspaceRoot := t.TempDir()
+	projectRoot := filepath.Join(workspaceRoot, "dbt")
+	if err := os.MkdirAll(projectRoot, 0755); err != nil {
+		t.Fatalf("create project directory: %v", err)
+	}
+
+	projectYaml := `name: nested_project
+profile: test_profile
+model-paths: [models]
+`
+	if err := os.WriteFile(filepath.Join(projectRoot, "dbt_project.yml"), []byte(projectYaml), 0644); err != nil {
+		t.Fatalf("write dbt_project.yml: %v", err)
+	}
+
+	profilesYaml := `test_profile:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+`
+	if err := os.WriteFile(filepath.Join(projectRoot, "profiles.yml"), []byte(profilesYaml), 0644); err != nil {
+		t.Fatalf("write profiles.yml: %v", err)
+	}
+
+	t.Setenv("DBT_ENGINE_PROFILES_DIR", "")
+	t.Setenv("DBT_PROFILES_DIR", "")
+	state := NewState()
+	state.refreshDbtContext(workspaceRoot)
+
+	if state.DbtContext.ProjectRoot != projectRoot {
+		t.Errorf("expected project root %q, got %q", projectRoot, state.DbtContext.ProjectRoot)
+	}
+	if state.DbtContext.Dialect != "duckdb" {
+		t.Errorf("expected dialect %q, got %q", "duckdb", state.DbtContext.Dialect)
 	}
 }
 

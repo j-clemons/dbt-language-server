@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,29 +19,16 @@ type Target struct {
 	Type string `yaml:"type"`
 }
 
-func GetDialect(profileName string, inputDir string) docs.Dialect {
-	filePath := ""
-	if inputDir == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			log.Println("Error getting home directory:", err)
-			return ""
-		}
-
-		// Check for custom profiles directory via environment variable
-		dbtProfilesDir := os.Getenv("DBT_PROFILES_DIR")
-		if dbtProfilesDir != "" {
-			filePath = filepath.Join(dbtProfilesDir, "profiles.yml")
-		} else {
-			filePath = filepath.Join(homeDir, ".dbt", "profiles.yml")
-		}
-	} else {
-		filePath = filepath.Join(inputDir, ".dbt", "profiles.yml")
+func GetDialect(profileName string, projectRoot string) docs.Dialect {
+	filePath, err := getProfilesPath(projectRoot)
+	if err != nil {
+		log.Println("Error resolving profiles.yml path:", err)
+		return ""
 	}
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Println("Error reading file:", err)
+		log.Printf("Error reading profiles file %s: %v", filePath, err)
 		return ""
 	}
 
@@ -65,4 +53,34 @@ func GetDialect(profileName string, inputDir string) docs.Dialect {
 	}
 
 	return ""
+}
+
+func getProfilesPath(projectRoot string) (string, error) {
+	// Based on documented profiles.yml location hierarchy
+	// https://docs.getdbt.com/docs/local/profiles.yml?version=2#location-of-profilesyml
+	if dbtEngineProfilesDir := os.Getenv("DBT_ENGINE_PROFILES_DIR"); dbtEngineProfilesDir != "" {
+		return filepath.Join(dbtEngineProfilesDir, "profiles.yml"), nil
+	}
+
+	if dbtProfilesDir := os.Getenv("DBT_PROFILES_DIR"); dbtProfilesDir != "" {
+		return filepath.Join(dbtProfilesDir, "profiles.yml"), nil
+	}
+
+	if projectRoot != "" {
+		projectPath := filepath.Join(projectRoot, "profiles.yml")
+		_, err := os.Stat(projectPath)
+		if err == nil {
+			return projectPath, nil
+		}
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("checking profiles file %s: %w", projectPath, err)
+		}
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("getting home directory: %w", err)
+	}
+
+	return filepath.Join(homeDir, ".dbt", "profiles.yml"), nil
 }

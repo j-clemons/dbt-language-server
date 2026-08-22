@@ -34,28 +34,22 @@ func TestGetDialect_CustomProfilesDir(t *testing.T) {
 		t.Fatalf("Failed to write profiles.yml: %v", err)
 	}
 
-	// Set up environment
-	originalProfilesDir := os.Getenv("DBT_PROFILES_DIR")
-
-	defer func() {
-		if originalProfilesDir == "" {
-			os.Unsetenv("DBT_PROFILES_DIR")
-		} else {
-			os.Setenv("DBT_PROFILES_DIR", originalProfilesDir)
-		}
-	}()
-
-	// Set DBT_PROFILES_DIR to absolute path
-	os.Setenv("DBT_PROFILES_DIR", customProfilesDir)
+	// Set DBT_ENGINE_PROFILES_DIR to absolute path
+	t.Setenv("DBT_ENGINE_PROFILES_DIR", customProfilesDir)
 
 	// Test GetDialect with custom profiles directory
-	dialect := GetDialect("test_profile", "")
+	dialect := GetDialect("test_profile", tempDir)
 
 	if dialect != "snowflake" {
 		t.Errorf("Expected dialect 'snowflake', got '%s'", dialect)
 	}
 }
+
 func TestGetDialect_DefaultProfilesDir(t *testing.T) {
+	// Ensure no custom dir is set
+	t.Setenv("DBT_ENGINE_PROFILES_DIR", "")
+	t.Setenv("DBT_PROFILES_DIR", "")
+
 	// Create a temporary directory for testing
 	tempDir, err := os.MkdirTemp("", "dbt_test")
 	if err != nil {
@@ -83,26 +77,69 @@ func TestGetDialect_DefaultProfilesDir(t *testing.T) {
 		t.Fatalf("Failed to write profiles.yml: %v", err)
 	}
 
-	// Set up environment
-	originalHome := os.Getenv("HOME")
-	originalProfilesDir := os.Getenv("DBT_PROFILES_DIR")
-
-	defer func() {
-		os.Setenv("HOME", originalHome)
-		if originalProfilesDir == "" {
-			os.Unsetenv("DBT_PROFILES_DIR")
-		} else {
-			os.Setenv("DBT_PROFILES_DIR", originalProfilesDir)
-		}
-	}()
-
-	os.Setenv("HOME", tempDir)
-	os.Unsetenv("DBT_PROFILES_DIR") // Ensure no custom dir is set
+	t.Setenv("HOME", tempDir)
 
 	// Test GetDialect with default profiles directory
-	dialect := GetDialect("test_profile", "")
+	dialect := GetDialect("test_profile", t.TempDir())
 
 	if dialect != "postgres" {
 		t.Errorf("Expected dialect 'postgres', got '%s'", dialect)
+	}
+}
+
+func TestGetDialect_ProjectRootProfiles(t *testing.T) {
+	projectRoot := t.TempDir()
+	t.Setenv("DBT_ENGINE_PROFILES_DIR", "")
+	t.Setenv("DBT_PROFILES_DIR", "")
+
+	profilesContent := `test_profile:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+`
+	profilesFile := filepath.Join(projectRoot, "profiles.yml")
+	if err := os.WriteFile(profilesFile, []byte(profilesContent), 0644); err != nil {
+		t.Fatalf("Failed to write profiles.yml: %v", err)
+	}
+
+	dialect := GetDialect("test_profile", projectRoot)
+
+	if dialect != "duckdb" {
+		t.Errorf("Expected dialect 'duckdb', got '%s'", dialect)
+	}
+}
+
+func TestGetProfilesPath_DbtEngineProfilesDirTakesPrecedence(t *testing.T) {
+	dbtEngineProfilesDir := t.TempDir()
+	t.Setenv("DBT_ENGINE_PROFILES_DIR", dbtEngineProfilesDir)
+	t.Setenv("DBT_PROFILES_DIR", t.TempDir())
+
+	profilesPath, err := getProfilesPath(t.TempDir())
+	if err != nil {
+		t.Fatalf("Failed to resolve profiles path: %v", err)
+	}
+
+	expectedPath := filepath.Join(dbtEngineProfilesDir, "profiles.yml")
+	if profilesPath != expectedPath {
+		t.Errorf("Expected profiles path '%s', got '%s'", expectedPath, profilesPath)
+	}
+}
+
+func TestGetProfilesPath_LegacyDbtProfilesDir(t *testing.T) {
+	// clear this out first so the legacy environment variable takes effect
+	t.Setenv("DBT_ENGINE_PROFILES_DIR", "")
+
+	dbtProfilesDir := t.TempDir()
+	t.Setenv("DBT_PROFILES_DIR", dbtProfilesDir)
+
+	profilesPath, err := getProfilesPath(t.TempDir())
+	if err != nil {
+		t.Fatalf("Failed to resolve profiles path: %v", err)
+	}
+
+	expectedPath := filepath.Join(dbtProfilesDir, "profiles.yml")
+	if profilesPath != expectedPath {
+		t.Errorf("Expected profiles path '%s', got '%s'", expectedPath, profilesPath)
 	}
 }
