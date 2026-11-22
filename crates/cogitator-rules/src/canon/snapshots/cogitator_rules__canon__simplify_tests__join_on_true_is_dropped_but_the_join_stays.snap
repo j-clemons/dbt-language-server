@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-rules/src/canon/simplify_tests.rs
+expression: text
+---
+before:
+Join Left on (1 Eq 1)
+  Scan model t [a#0:int64!]
+  Scan model u [b#1:int64!]
+after:
+Join Left on 
+  Scan model t [a#0:int64!]
+  Scan model u [b#1:int64!]

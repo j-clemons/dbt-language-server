@@ -24,6 +24,7 @@ mod linked_editing;
 pub mod lint;
 mod model_info;
 mod navigation;
+pub mod plan;
 mod relation;
 mod rename;
 mod signature;
@@ -49,7 +50,7 @@ pub use governance::{contract_diagnostics, private_ref_diagnostics};
 pub use graph_nav::{
     model_graph, project_graph_json, GraphEntry, GraphNodeKind, ModelGraph, ProjectGraph,
 };
-pub use hover::hover;
+pub use hover::{hover, hover_with_lineage};
 pub use impact::{impact, impact_targets, ImpactReport, IMPACT_LINEAGE_CAP};
 pub use inlay_hints::inlay_hints;
 pub use jinja_preview::{expand_jinja, ExpandedSql, PreviewInputs};

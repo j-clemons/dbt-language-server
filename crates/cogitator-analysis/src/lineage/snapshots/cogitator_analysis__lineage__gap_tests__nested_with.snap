@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"with outer_cte as (\\n\",\n\"  with inner_cte as (select a from {{ ref('m') }})\\n\",\n\"  select a as b from inner_cte\\n\", \")\\n\", \"select b from outer_cte\",))"
+---
+with outer_cte as (
+  with inner_cte as (select a from {{ ref('m') }})
+  select a as b from inner_cte
+)
+select b from outer_cte
+---
+b <-
+  model m.a

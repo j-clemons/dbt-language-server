@@ -1,0 +1,1 @@
+CREATE TABLE events (id INTEGER, ts TIMESTAMP);

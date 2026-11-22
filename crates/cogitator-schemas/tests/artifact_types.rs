@@ -21,12 +21,25 @@ fn run_results_tolerate_unknowns_and_foreign_statuses() {
         Some("flaked"),
         "status stays a String"
     );
-    assert_eq!(result.execution_time, Some(1.5));
+    assert_eq!(result.execution_time, Some(serde_json::json!(1.5)));
     assert!(result.message.is_none());
     // a result missing every field but unique_id still parses
     let sparse: run_results::RunResultsArtifact =
         serde_json::from_str(r#"{"results": [{"unique_id": "model.p.m"}]}"#).unwrap();
     assert_eq!(sparse.results.len(), 1);
+}
+
+#[test]
+fn run_results_accept_any_execution_time_shape() {
+    for raw in [
+        r#"{"execution_time": "fast"}"#,
+        r#"{"execution_time": null}"#,
+        "{}",
+    ] {
+        let text = format!(r#"{{"results": [{raw}]}}"#);
+        let parsed: run_results::RunResultsArtifact = serde_json::from_str(&text).unwrap();
+        assert_eq!(parsed.results.len(), 1, "{raw}");
+    }
 }
 
 #[test]
@@ -59,6 +72,22 @@ fn catalog_tables_and_columns_parse() {
     let table = &cat.sources["source.p.stripe.payments"];
     assert_eq!(table.columns.len(), 2);
     assert_eq!(table.columns["id"].comment.as_deref(), Some("pk"));
+    let stats = table.stats.as_ref().expect("stats are retained");
+    assert_eq!(stats["row_count"]["value"], 9);
+}
+
+#[test]
+fn catalog_accepts_any_stats_and_generated_at_shape() {
+    let cat: catalog::CatalogArtifact = serde_json::from_str(
+        r#"{"metadata": {"generated_at": 17},
+            "nodes": {"model.p.a": {"stats": "none"},
+                      "model.p.b": {"stats": null},
+                      "model.p.c": {"stats": {"row_count": {"value": {"odd": true}}}},
+                      "model.p.d": {}}}"#,
+    )
+    .unwrap();
+    assert_eq!(cat.nodes.len(), 4);
+    assert!(cat.nodes["model.p.d"].stats.is_none());
 }
 
 #[test]
@@ -79,4 +108,23 @@ fn manifest_projection_reads_the_two_lookups() {
         mf.nodes["test.p.not_null.abc"].attached_node.as_deref(),
         Some("model.p.customers")
     );
+}
+
+#[test]
+fn manifest_projection_keeps_relation_name_and_config() {
+    let mf: manifest::ManifestProjection = serde_json::from_str(
+        r#"{"nodes": {
+              "model.p.a": {"relation_name": "\"db\".\"s\".\"a\"",
+                             "config": {"materialized": "table",
+                                        "partition_by": {"field": "ts"}}},
+              "model.p.b": {"relation_name": null, "config": null},
+              "model.p.c": {"relation_name": 3, "config": "table"},
+              "model.p.d": {}
+            }}"#,
+    )
+    .unwrap();
+    assert_eq!(mf.nodes.len(), 4, "no shape rejects the manifest");
+    let config = mf.nodes["model.p.a"].config.as_ref().expect("config");
+    assert_eq!(config["partition_by"]["field"], "ts");
+    assert!(mf.nodes["model.p.d"].config.is_none());
 }

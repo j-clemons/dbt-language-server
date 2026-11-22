@@ -1,0 +1,36 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Complete
+query [420..428]
+  cte source
+    query [151..159]
+      select distinct=None
+        item * exclude=0
+        from model raw_payments
+  cte renamed
+    query [214..388]
+      select distinct=None
+        item id as payment_id
+        item order_id
+        item payment_method
+        item (amount Div 100) as amount
+        from cte source
+  select distinct=None
+    item * exclude=0
+    from cte renamed
+--jinja--
+Comment Blank "{#-\n    Normally we would select from the table here, but we are using seeds to load\n    our data in this project\n    #}"
+Ref Blank "{{ ref('raw_payments') }}"
+--outputs--
+payment_id
+order_id
+payment_method
+amount
+--resolutions--
+id Some(OpenSchema(#1))
+order_id Some(OpenSchema(#1))
+payment_method Some(OpenSchema(#1))
+amount Some(OpenSchema(#1))
+--degraded--

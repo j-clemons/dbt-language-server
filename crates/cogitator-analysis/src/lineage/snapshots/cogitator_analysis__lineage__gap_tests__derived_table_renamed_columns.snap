@@ -1,0 +1,10 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(\"select x, y from (select a, b from {{ ref('m') }}) as d(x, y)\")"
+---
+select x, y from (select a, b from {{ ref('m') }}) as d(x, y)
+---
+x <-
+  model m.a
+y <-
+  model m.b

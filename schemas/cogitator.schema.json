@@ -68,6 +68,263 @@
         }
       }
     },
+    "perf": {
+      "description": "Query-plan performance diagnostics; dbt.queryPlan always works, whatever is set here.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "catalog_stats": {
+          "description": "Use catalog statistics when ordering findings; statistics never raise a severity. (bool)",
+          "type": "boolean"
+        },
+        "profile": {
+          "description": "Which rules report as diagnostics: off (default), recommended or strict. (off|recommended|strict)",
+          "type": "string",
+          "enum": [
+            "off",
+            "recommended",
+            "strict"
+          ]
+        }
+      }
+    },
+    "perf_rules": {
+      "description": "Per-rule severity, by rule id; wins over the profile. A rule named here reports even under profile off.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cross.duplicate_logic": {
+          "description": "Same logic as another model. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "cross.ephemeral_repeat": {
+          "description": "Ephemeral model recomputed in each consumer. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "cross.filter_late": {
+          "description": "Every consumer repeats the same filter. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "cross.select_star_chain": {
+          "description": "SELECT * reading columns nothing downstream uses (also lint.select_star). (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "cross.unused_column": {
+          "description": "No downstream use in this project. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "filter.cluster_order": {
+          "description": "Filter skips the leading cluster column. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "filter.constant_false": {
+          "description": "Filter is always false. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "filter.non_sargable": {
+          "description": "Wrapped column may block pruning. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "filter.partition_or": {
+          "description": "OR defeats partition pruning. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "incr.missing_guard": {
+          "description": "Incremental model reprocesses all input each run. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "incr.no_unique_key": {
+          "description": "Merge strategy without a unique_key. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "incr.subquery_watermark": {
+          "description": "Subquery filter does not prune. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "join.cartesian": {
+          "description": "Join with no key. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "join.distinct_fanout": {
+          "description": "DISTINCT may hide join fan-out. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "join.key_type_mismatch": {
+          "description": "Join keys have different types. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "join.left_nullified": {
+          "description": "WHERE makes this LEFT JOIN inner. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "join.redundant_left": {
+          "description": "LEFT JOIN adds nothing. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "limit.no_scan_reduction": {
+          "description": "LIMIT does not reduce bytes read. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "model.unused_cte": {
+          "description": "CTE never used. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "order.in_cte": {
+          "description": "ORDER BY has no effect here. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "set.union_distinct": {
+          "description": "UNION dedupes; UNION ALL? (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "subq.correlated": {
+          "description": "Correlated subquery. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        },
+        "subq.not_in_nullable": {
+          "description": "NOT IN over a nullable column can return nothing. (off|hint|info|warning)",
+          "type": "string",
+          "enum": [
+            "off",
+            "hint",
+            "info",
+            "warning"
+          ]
+        }
+      }
+    },
     "profiles": {
       "description": "dbt profiles overrides — hot: editing these re-resolves the active profile/target.",
       "type": "object",

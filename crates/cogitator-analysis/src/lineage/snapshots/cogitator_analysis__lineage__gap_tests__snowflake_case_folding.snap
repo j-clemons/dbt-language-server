@@ -1,0 +1,11 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_in(\"snowflake\",\n\"with Upper_Cte as (select ID as Key from {{ ref('m') }})\\nselect key, UPPER_CTE.KEY as k2 from upper_cte\",)"
+---
+with Upper_Cte as (select ID as Key from {{ ref('m') }})
+select key, UPPER_CTE.KEY as k2 from upper_cte
+---
+key <-
+  model m.ID
+k2 <-
+  model m.ID

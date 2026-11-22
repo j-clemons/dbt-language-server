@@ -1,0 +1,16 @@
+rule = "set.union_distinct"
+fix = "UNION to UNION ALL (arms proven disjoint and duplicate-free)"
+safety = "P"
+description = "The `src` literals keep the arms apart and each arm is SELECT DISTINCT, so UNION has nothing to remove."
+
+[[fixtures]]
+name = "nulls_and_duplicates"
+seed = "seed.sql"
+role = "preserve"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "empty_beta"
+seed = "seed_empty_beta.sql"
+role = "preserve"
+covers = ["empty"]

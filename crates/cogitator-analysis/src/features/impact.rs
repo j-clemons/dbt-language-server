@@ -36,6 +36,10 @@ pub struct ImpactReport {
     pub exposures: Vec<String>,
     pub column_hits: Vec<ColumnHit>,
     pub truncated: bool,
+    /// Models whose column answer came from compiled SQL; omitted when
+    /// none did (additive, like `ModelLineage.origin`).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub compiled_lineage: Vec<String>,
 }
 
 /// How many downstream models the shell computes lineage for.
@@ -77,6 +81,11 @@ pub fn impact(
         }
     }
     let truncated = models.len() > IMPACT_LINEAGE_CAP;
+    let compiled_lineage = models
+        .iter()
+        .filter(|node| lineages.get(&node.name).is_some_and(|l| l.origin.is_some()))
+        .map(|node| node.name.clone())
+        .collect();
     let column_hits = column
         .map(|column| column_closure(model, column, &models, lineages))
         .unwrap_or_default();
@@ -96,6 +105,7 @@ pub fn impact(
         exposures,
         column_hits,
         truncated,
+        compiled_lineage,
     }
 }
 

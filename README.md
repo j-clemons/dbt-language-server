@@ -117,6 +117,11 @@ BigQuery), dbt Fusion static analysis, document symbols, and the
 - **Compiled SQL over the wire** (`dbt.compiledSql`): the server reads
   `target/compiled/…` itself and answers the text (2 MiB cap), so
   editors need no filesystem path math
+- **Query plan** (`dbt.queryPlan`, `:DbtPlan`): each IR level (HIR,
+  MIR, LIR) of one model with its fidelity and any gaps, the optimiser
+  findings, and which rules ran or were skipped and why; models with
+  Jinja control flow other than `is_incremental()` report what to run
+  instead (`dbt compile`)
 - **Relation resolution** (`dbt.relation`): the
   `database.schema.identifier` of the `source()` table, `ref()` target
   or model under the cursor — source YAML coordinates with dbt's
@@ -289,6 +294,12 @@ startup:                 # honored only via --config at launch
   otlp: ""
   tree_sitter: true
   fusion: dbt
+perf:
+  profile: off             # off | recommended | strict: which plan rules
+  catalog_stats: true      # report as diagnostics (dbt.queryPlan always works)
+perf_rules:                # per-rule severity or off; wins over the profile
+  join.cartesian: warning  # off | hint | info | warning
+  filter.non_sargable: off
 ```
 
 Hot semantics are **changed-keys-only, last writer wins**: a reload
@@ -305,6 +316,24 @@ Launch precedence: defaults < config file < CLI flags <
 only apply when the file is passed at launch via `--config <path>`;
 found in the root file, they warn to restart instead. `dbt.status`
 reports the file's path, whether it loaded, and the last parse error.
+
+## Performance advice
+
+Off by default. Set `perf.profile` in `cogitator.yml` to `recommended` (the
+rules whose findings are claims) or `strict` (everything), or name single
+rules under `perf_rules`; `dbt.queryPlan` shows the plan whichever you pick.
+
+The advice comes from reading your SQL statically: nothing here runs a query
+or connects to a warehouse, and SQL changes only through a quick fix you
+accept. Findings report through pull diagnostics, and the next save
+republishes them for push clients (the push path reuses a computed plan and
+never plans). A model with Jinja control flow is planned from
+`target/compiled` when that exists.
+
+Suppress a finding with a `{# cogitator: ignore join.cartesian -- reason #}`
+comment, or `-- cogitator: ignore …`, on the same line or the line above;
+`ignore-file` covers the whole file. Suppressed findings stay visible in
+`dbt.queryPlan`.
 
 ## Observability
 

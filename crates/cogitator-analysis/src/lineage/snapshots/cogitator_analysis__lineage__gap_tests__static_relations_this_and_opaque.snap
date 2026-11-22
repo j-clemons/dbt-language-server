@@ -1,0 +1,16 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"select t.a, cast(s.f as int) as field, trim(s.g) as item, {{ my_macro() }} as m, u.b\\n\",\n\"from {{ this }} as t, {{ source('raw', 'events') }} as s, {{ dyn(ref('up')) }} as u\",))"
+---
+select t.a, cast(s.f as int) as field, trim(s.g) as item, {{ my_macro() }} as m, u.b
+from {{ this }} as t, {{ source('raw', 'events') }} as s, {{ dyn(ref('up')) }} as u
+---
+a <-
+  unknown this.a
+field <-
+  source raw.events.f
+item <-
+  source raw.events.g
+m <- (nothing)
+b <-
+  model up.b

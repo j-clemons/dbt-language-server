@@ -8,6 +8,9 @@ license.workspace = true
 # DuckDB 2.0 parse diagnostics (specs/rust-port/07). Off by default so the
 # bundled C++ build stays out of the dev inner loop (09 §1).
 duckdb-parser = ["dep:duckdb"]
+# Test-only engine oracle (specs/ir-pipeline/07): `oracle::{explain_json,
+# bag_equal}` for crates/cogitator-oracle. Never enabled by the default build.
+duckdb-oracle = ["dep:duckdb"]
 
 [dependencies]
 cogitator-error = { workspace = true }

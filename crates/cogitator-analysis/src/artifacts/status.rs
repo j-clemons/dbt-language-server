@@ -32,7 +32,7 @@ pub fn run_status_by_model(rr: &RunResults) -> HashMap<String, RunStatus> {
             name.to_string(),
             RunStatus {
                 status: result.status.clone(),
-                execution_time: result.execution_time,
+                execution_time: result.execution_time.unwrap_or_default(),
                 message: result.message.clone(),
                 generated_at: rr.metadata.generated_at.clone(),
             },

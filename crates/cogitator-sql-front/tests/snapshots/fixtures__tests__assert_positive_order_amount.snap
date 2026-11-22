@@ -1,0 +1,21 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Complete
+query [53..76]
+  select distinct=None
+    item order_id
+    item amount
+    from model orders
+    where (amount Lt 0)
+--jinja--
+Ref Blank "{{ ref('orders') }}"
+--outputs--
+order_id
+amount
+--resolutions--
+order_id Some(OpenSchema(#0))
+amount Some(OpenSchema(#0))
+amount Some(OpenSchema(#0))
+--degraded--

@@ -1,0 +1,16 @@
+rule = "filter.non_sargable"
+fix = "DATE(ts) = d to a half-open range on ts"
+safety = "P"
+description = "A half-open day range on ts holds exactly when the timestamp's date equals d, and both sides reject NULL ts. Neither oracle engine has BigQuery's DATE(ts) or TIMESTAMP(d), so the case uses CAST, the same shape the rule recognises and its quick fix rewrites for BigQuery."
+
+[[fixtures]]
+name = "nulls_duplicates_and_boundaries"
+seed = "seed.sql"
+role = "preserve"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "empty_events"
+seed = "seed_empty.sql"
+role = "preserve"
+covers = ["empty"]

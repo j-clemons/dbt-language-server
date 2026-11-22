@@ -2,6 +2,8 @@
 //! between two file versions, launch-precedence filtering, and the one
 //! shell helper that writes the live state.
 
+use cogitator_analysis::features::plan::diagnostics_config::PerfSettings;
+
 use super::super::{ProfilesConfig, SharedLimits, SharedToggles};
 use super::FileConfig;
 
@@ -19,6 +21,7 @@ pub enum Change {
     LintFlags(u32),
     WarehouseColumns(bool),
     ClientLogLevel(u8),
+    Perf(PerfSettings),
 }
 
 /// The changed-keys-only diff: a key participates only when its file
@@ -85,6 +88,12 @@ pub fn diff(old: &FileConfig, new: &FileConfig, baseline: &Baseline) -> Vec<Chan
             new.warehouse.columns.unwrap_or(baseline.warehouse_columns),
         ));
     }
+    if old.perf != new.perf
+        || old.perf_rules != new.perf_rules
+        || old.lint.select_star != new.lint.select_star
+    {
+        out.push(Change::Perf(new.perf_settings(&baseline.perf)));
+    }
     if old.log != new.log {
         // an unrecognized level name keeps the launch value — the
         // cogitator.yml diagnostics flag the typo separately
@@ -116,7 +125,8 @@ pub fn launch_filter(changes: Vec<Change>, baseline: &Baseline) -> Vec<Change> {
             | Change::ArtifactCapMib(_)
             | Change::LintFlags(_)
             | Change::WarehouseColumns(_)
-            | Change::ClientLogLevel(_) => true,
+            | Change::ClientLogLevel(_)
+            | Change::Perf(_) => true,
         })
         .collect()
 }
@@ -131,6 +141,7 @@ pub struct Baseline {
     pub lint_flags: u32,
     pub warehouse_columns: bool,
     pub client_log_level: u8,
+    pub perf: PerfSettings,
 }
 
 /// Apply changes to the live state; returns the key names for the one
@@ -190,6 +201,12 @@ pub fn apply(
                 crate::client_log::set_level(*level);
                 applied.push("log.client_level");
             }
+            Change::Perf(settings) => {
+                // a Mutex-free swap, kept tight: readers clone the Arc
+                *toggles.perf.write().expect("perf settings lock") =
+                    std::sync::Arc::new(settings.clone());
+                applied.push("perf");
+            }
         }
     }
     applied
@@ -211,6 +228,7 @@ mod tests {
             lint_flags: 0,
             warehouse_columns: false,
             client_log_level: crate::client_log::level::INFO,
+            perf: PerfSettings::default(),
         }
     }
 
@@ -232,7 +250,11 @@ mod tests {
         // removing the whole section reverts to the baseline (all off)
         let gone = parse("", Path::new("x")).unwrap();
         let reverted = diff(&new, &gone, &baseline());
-        assert_eq!(reverted, vec![Change::LintFlags(0)]);
+        // ...and, since select_star aliases a plan rule, the perf settings
+        assert_eq!(
+            reverted,
+            vec![Change::LintFlags(0), Change::Perf(PerfSettings::default())]
+        );
     }
 
     #[test]

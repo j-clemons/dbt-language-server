@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-lower/tests/mir_shape.rs
+expression: print_mir(&mir)
+---
+Project a#1:unknown := a#1, a#2:unknown := a#2
+  Join Cross on 
+    CteRef #0 [a#1:unknown]
+    CteRef #0 [a#2:unknown]
+-- ctes
+cte#0 c out=[a#0:unknown]
+  Project a#0:unknown := a#0
+    Scan model t [a#0:unknown]

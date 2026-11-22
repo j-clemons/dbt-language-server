@@ -13,9 +13,7 @@
     "dbt_version": {
      "type": "string"
     },
-    "generated_at": {
-     "type": "string"
-    },
+    "generated_at": {},
     "invocation_id": {
      "anyOf": [
       {
@@ -121,50 +119,7 @@
        }
       }
      },
-     "stats": {
-      "type": "object",
-      "additionalProperties": {
-       "type": "object",
-       "title": "StatsItem",
-       "properties": {
-        "id": {
-         "type": "string"
-        },
-        "label": {
-         "type": "string"
-        },
-        "value": {
-         "anyOf": [
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "null"
-          }
-         ]
-        },
-        "include": {
-         "type": "boolean"
-        },
-        "description": {
-         "anyOf": [
-          {
-           "type": "string"
-          },
-          {
-           "type": "null"
-          }
-         ]
-        }
-       }
-      }
-     },
+     "stats": {},
      "unique_id": {
       "anyOf": [
        {
@@ -257,50 +212,7 @@
        }
       }
      },
-     "stats": {
-      "type": "object",
-      "additionalProperties": {
-       "type": "object",
-       "title": "StatsItem",
-       "properties": {
-        "id": {
-         "type": "string"
-        },
-        "label": {
-         "type": "string"
-        },
-        "value": {
-         "anyOf": [
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "null"
-          }
-         ]
-        },
-        "include": {
-         "type": "boolean"
-        },
-        "description": {
-         "anyOf": [
-          {
-           "type": "string"
-          },
-          {
-           "type": "null"
-          }
-         ]
-        }
-       }
-      }
-     },
+     "stats": {},
      "unique_id": {
       "anyOf": [
        {

@@ -80,15 +80,47 @@ pub fn cogitator_diagnostics(text: &str) -> Vec<Diagnostic> {
                 ));
                 continue;
             };
-            if let Some(problem) = value_type_problem(doc.value_hint, value) {
-                out.push(warn(
-                    position_of(value),
-                    Guidance::new(format!("{}.{name} {problem}", schema.name)),
-                ));
+            if let Some(guidance) = value_problem(schema.name, name, doc.value_hint, value) {
+                out.push(warn(position_of(value), guidance));
             }
         }
     }
     out
+}
+
+/// A value the schema's hint rejects: a closed enum names its choices
+/// (with did-you-mean); other hints use the light type check.
+fn value_problem(
+    section_name: &str,
+    key: &str,
+    hint: &str,
+    value: &saphyr::MarkedYaml<'_>,
+) -> Option<Guidance> {
+    if hint.contains('|') {
+        return enum_problem(section_name, key, hint, value);
+    }
+    value_type_problem(hint, value)
+        .map(|problem| Guidance::new(format!("{section_name}.{key} {problem}")))
+}
+
+fn enum_problem(
+    section_name: &str,
+    key: &str,
+    hint: &str,
+    value: &saphyr::MarkedYaml<'_>,
+) -> Option<Guidance> {
+    use cogitator_schemas::yaml::as_str;
+    let choices = hint.split('|');
+    if as_str(value).is_some_and(|v| choices.clone().any(|c| c == v)) {
+        return None;
+    }
+    let shown = as_str(value).unwrap_or("this value");
+    Some(
+        Guidance::new(format!(
+            "{section_name}.{key} expects one of {hint}, not '{shown}'"
+        ))
+        .suggest(closest_matches(shown, choices)),
+    )
 }
 
 /// Light value typing from the schema's value hint; `None` = fine.
@@ -213,6 +245,33 @@ mod tests {
         assert!(diags
             .iter()
             .all(|d| d.range.start.line > 0 || d.range.start.character == 0));
+    }
+
+    #[test]
+    fn perf_sections_validate_rule_ids_and_values() {
+        let diags = cogitator_diagnostics(
+            "perf:\n  profile: loud\nperf_rules:\n  join.cartesan: warning\n  filter.non_sargable: nope\n  join.cartesian: warning\n",
+        );
+        let texts: Vec<&str> = diags.iter().map(|d| d.message.as_str()).collect();
+        assert!(
+            texts
+                .iter()
+                .any(|t| t.contains("perf.profile") && t.contains("off|recommended|strict")),
+            "{texts:?}"
+        );
+        assert!(
+            texts
+                .iter()
+                .any(|t| t.contains("'join.cartesan'") && t.contains("join.cartesian")),
+            "{texts:?}"
+        );
+        assert!(
+            texts
+                .iter()
+                .any(|t| t.contains("perf_rules.filter.non_sargable")),
+            "{texts:?}"
+        );
+        assert_eq!(texts.len(), 3, "the valid entry is silent: {texts:?}");
     }
 
     #[test]

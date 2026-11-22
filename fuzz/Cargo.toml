@@ -14,6 +14,8 @@ libfuzzer-sys = "0.4"
 cogitator-parser = { path = "../crates/cogitator-parser" }
 cogitator-dialects = { path = "../crates/cogitator-dialects" }
 cogitator-schemas = { path = "../crates/cogitator-schemas" }
+cogitator-ir = { path = "../crates/cogitator-ir" }
+cogitator-sql-front = { path = "../crates/cogitator-sql-front" }
 
 [[bin]]
 name = "parse_document"
@@ -32,6 +34,13 @@ bench = false
 [[bin]]
 name = "properties_yaml"
 path = "fuzz_targets/properties_yaml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "build_hir"
+path = "fuzz_targets/build_hir.rs"
 test = false
 doc = false
 bench = false

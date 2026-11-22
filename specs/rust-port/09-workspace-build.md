@@ -33,6 +33,10 @@ dbt-language-server/
     │                          #   petgraph ProjectGraph, util (03, 05 §5)
     ├── cogitator-duckdb/      # DuckDB 2.0 parse diagnostics (07) — OWNS the bundled C++ build
     ├── cogitator-treesitter/  # tree-sitter backend (06 §3) — OWNS the grammar C builds
+    ├── cogitator-ir/          # IR arenas, HIR/MIR/LIR types, verifiers, printers (specs/ir-pipeline/)
+    ├── cogitator-sql-front/   # HIR construction: masking, binder (the only IR crate seeing sqlparser/minijinja::machinery)
+    ├── cogitator-lower/       # HIR→MIR, MIR→LIR, dialect backends
+    ├── cogitator-rules/       # pass manager, trace, rule registry, rules
     └── cogitator/             # the binary: CLI, tokio task wiring, dispatcher,
                                #   fusion orchestration, observability (01 §3, 04 §1–§2, 05 §6)
 ```
@@ -45,7 +49,14 @@ error ◄── lsp ◄── dialects ◄── parser ◄── analysis ◄�
             └── schemas ──────────┼────────────┘              │
                                   └── dbt-ls-duckdb ──────────┘   (optional)
                                       dbt-ls-treesitter ──────┘   (phase 2)
+
+ir ◄── sql-front (+ parser, dialects, error, sqlparser, minijinja)
+ir ◄── lower
+ir ◄── rules                       analysis depends on all four
 ```
+
+`cogitator-ir` depends only on serde and petgraph and must never depend on
+`cogitator-error` (which pulls in sqlparser). See `specs/ir-pipeline/00`.
 
 Rationale per cut (the compile-time argument the workspace exists for):
 

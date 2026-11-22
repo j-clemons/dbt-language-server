@@ -1,0 +1,16 @@
+[package]
+name = "cogitator-sql-front"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+cogitator-ir = { workspace = true }
+cogitator-parser = { workspace = true }
+cogitator-dialects = { workspace = true }
+cogitator-error = { workspace = true }
+sqlparser = { workspace = true }
+minijinja = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }

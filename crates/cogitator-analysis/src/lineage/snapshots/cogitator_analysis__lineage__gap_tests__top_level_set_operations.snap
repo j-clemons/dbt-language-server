@@ -1,0 +1,15 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"select a, b from {{ ref('x') }}\\n\", \"union all\\n\",\n\"select c, d from {{ source('s', 't') }}\\n\",))"
+---
+select a, b from {{ ref('x') }}
+union all
+select c, d from {{ source('s', 't') }}
+
+---
+a <-
+  model x.a
+  source s.t.c
+b <-
+  model x.b
+  source s.t.d

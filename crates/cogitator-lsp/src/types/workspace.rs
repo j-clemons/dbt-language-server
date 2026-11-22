@@ -4,11 +4,11 @@
 //! `null` on the wire stays a plain Option — no skip_serializing_if, so
 //! the payloads match the former hand-built JSON key for key.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::core::Range;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TextEdit {
     pub range: Range,
     #[serde(rename = "newText")]

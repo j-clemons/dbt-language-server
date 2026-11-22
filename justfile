@@ -34,17 +34,33 @@ test:
 duckdb-check:
     cargo check -p cogitator --features duckdb-parser
 
+# run the differential corpus against DuckDB (bundled C++ build, slow cold)
+[group('test')]
+oracle-duckdb:
+    cargo test -p cogitator-oracle --features duckdb-oracle
+
+# run the differential corpus against DataFusion (isolated workspace)
+[group('test')]
+oracle-datafusion:
+    cargo test --manifest-path oracles/datafusion/Cargo.toml --locked
+
+# run the differential corpus against both engines (specs/ir-pipeline/07)
+[group('test')]
+oracle: oracle-duckdb oracle-datafusion
+
 # --------------------------------------------------------------- format
 
 # format all crates in place
 [group('format')]
 fmt:
     cargo fmt --all
+    cargo fmt --manifest-path oracles/datafusion/Cargo.toml
 
 # verify formatting without writing
 [group('format')]
 fmt-check:
     cargo fmt --all --check
+    cargo fmt --manifest-path oracles/datafusion/Cargo.toml --check
 
 # Format the Neovim plugin's Lua (stylua from the nix shell)
 [group('format')]
@@ -107,7 +123,7 @@ gen-schemas-check: gen-schemas
 # test fails the suite while it is stale)
 [group('schemas')]
 gen-config-schema:
-    cargo run -q -p cogitator -- schema > schemas/cogitator.schema.json
+    cargo run -q -p cogitator --bin cogitator -- schema > schemas/cogitator.schema.json
 
 # ---------------------------------------------------------- perf & fuzz
 

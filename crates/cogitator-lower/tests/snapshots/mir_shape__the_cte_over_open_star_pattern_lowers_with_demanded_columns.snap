@@ -1,0 +1,13 @@
+---
+source: crates/cogitator-lower/tests/mir_shape.rs
+expression: print_mir(&mir)
+---
+Project a#2:unknown := a#2
+  CteRef #1 [a#2:unknown]
+-- ctes
+cte#0 src out=[a#0:unknown]
+  Opaque Unsupported open=true [a#0:unknown]
+    Scan model raw [] open
+cte#1 final out=[a#1:unknown]
+  Project a#1:unknown := a#1
+    CteRef #0 [a#1:unknown]

@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-rules/src/canon/predicates_blockers_tests.rs
+expression: text
+---
+before:
+Filter (a#0 Gt 1)
+  Aggregate keys=[a#0:int64! := a#0] aggs=[total#2:int64! := sum(b#1)]
+    Scan model t [a#0:int64!, b#1:int64!]
+after:
+Aggregate keys=[a#0:int64! := a#0] aggs=[total#2:int64! := sum(b#1)]
+  Filter (a#0 Gt 1)
+    Scan model t [a#0:int64!, b#1:int64!]

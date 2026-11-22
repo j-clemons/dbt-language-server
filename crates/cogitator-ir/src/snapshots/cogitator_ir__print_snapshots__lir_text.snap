@@ -1,0 +1,7 @@
+---
+source: crates/cogitator-ir/src/print_snapshots.rs
+expression: "print_lir(&lir, &mir)"
+---
+backend Generic sink Table partition=[] cluster=[] contract=false
+Filter (status#1 Eq 1) est=unknown
+  TableScan model orders [id#0:int64!, status#1:text] prune=[] est=unknown

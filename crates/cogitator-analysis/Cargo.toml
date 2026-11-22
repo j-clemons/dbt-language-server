@@ -12,6 +12,10 @@ cogitator-lsp = { workspace = true }
 cogitator-dialects = { workspace = true }
 cogitator-schemas = { workspace = true }
 cogitator-parser = { workspace = true }
+cogitator-ir = { workspace = true }
+cogitator-sql-front = { workspace = true }
+cogitator-lower = { workspace = true }
+cogitator-rules = { workspace = true }
 petgraph = { workspace = true }
 regex = { workspace = true }
 walkdir = { workspace = true }
@@ -29,4 +33,8 @@ insta = { workspace = true }
 
 [[bench]]
 name = "lineage"
+harness = false
+
+[[bench]]
+name = "plan_budgets"
 harness = false

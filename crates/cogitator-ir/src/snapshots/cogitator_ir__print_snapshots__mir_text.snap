@@ -1,0 +1,8 @@
+---
+source: crates/cogitator-ir/src/print_snapshots.rs
+expression: print_mir(&mir)
+---
+Filter (status#1 Eq 1)
+  Join Left on (id#0 Eq order_id#2)
+    Scan model orders [id#0:int64!, status#1:text]
+    Scan model items [order_id#2:int64!]

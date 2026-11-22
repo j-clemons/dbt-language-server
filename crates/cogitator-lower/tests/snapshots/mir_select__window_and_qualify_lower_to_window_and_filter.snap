@@ -1,0 +1,8 @@
+---
+source: crates/cogitator-lower/tests/mir_select.rs
+expression: print_mir(&mir)
+---
+Project k#0:unknown := k#0
+  Filter (?#1 Eq 1)
+    Window ?#1:int! := row_number
+      Scan model t [k#0:unknown]

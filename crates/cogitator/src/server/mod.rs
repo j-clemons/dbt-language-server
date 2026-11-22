@@ -70,6 +70,11 @@ pub struct SharedToggles {
     /// `config_file::lint_flags` bits; 0 = every check off.
     pub lints: std::sync::atomic::AtomicU32,
     pub warehouse_columns: std::sync::atomic::AtomicBool,
+    /// `perf`/`perf_rules`: an atomic can't hold a severity per rule, so
+    /// readers clone this snapshot (cheap) and a config change swaps it.
+    pub perf: std::sync::RwLock<
+        Arc<cogitator_analysis::features::plan::diagnostics_config::PerfSettings>,
+    >,
 }
 
 /// Shared profiles configuration: seeded from launch flags, replaced by
@@ -226,6 +231,8 @@ pub async fn run(
     if let Some(on) = launch.warehouse.columns {
         toggles.warehouse_columns.store(on, Ordering::Relaxed);
     }
+    *toggles.perf.write().expect("perf settings lock") =
+        Arc::new(launch.perf_settings(&Default::default()));
     let refresh_limits = limits.clone();
     #[cfg(feature = "duckdb-parser")]
     let refresh_toggles = toggles.clone();

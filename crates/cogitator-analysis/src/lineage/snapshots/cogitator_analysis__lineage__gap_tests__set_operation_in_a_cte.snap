@@ -1,0 +1,10 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"with u as (select a from {{ ref('x') }} union select a from {{ ref('y') }})\\n\",\n\"select a from u\",))"
+---
+with u as (select a from {{ ref('x') }} union select a from {{ ref('y') }})
+select a from u
+---
+a <-
+  model x.a
+  model y.a

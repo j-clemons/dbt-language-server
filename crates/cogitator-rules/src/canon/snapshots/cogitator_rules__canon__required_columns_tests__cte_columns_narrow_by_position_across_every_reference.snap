@@ -1,0 +1,22 @@
+---
+source: crates/cogitator-rules/src/canon/required_columns_tests.rs
+expression: text
+---
+before:
+Project x#9:int64! := a#3, y#10:int64! := b#7
+  Join Cross on 
+    CteRef #0 [a#3:int64!, b#4:int64!, c#5:int64!]
+    CteRef #0 [a#6:int64!, b#7:int64!, c#8:int64!]
+-- ctes
+cte#0 c out=[a#0:int64!, b#1:int64!, c#2:int64!]
+  Project a#0:int64! := a#0, b#1:int64! := b#1, c#2:int64! := c#2
+    Scan model t [a#0:int64!, b#1:int64!, c#2:int64!]
+after:
+Project x#9:int64! := a#3, y#10:int64! := b#7
+  Join Cross on 
+    CteRef #1 [a#3:int64!, b#4:int64!]
+    CteRef #1 [a#6:int64!, b#7:int64!]
+-- ctes
+cte#1 c out=[a#0:int64!, b#1:int64!]
+  Project a#0:int64! := a#0, b#1:int64! := b#1
+    Scan model t [a#0:int64!, b#1:int64!]

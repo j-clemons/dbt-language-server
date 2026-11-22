@@ -60,6 +60,7 @@ pub fn code_actions(
     };
     // quickfixes first: a fix beats a workflow command in every menu
     let mut all = quickfix::quickfixes(uri, context_diagnostics);
+    all.extend(quickfix::fix_all(uri, context_diagnostics, only));
     all.append(&mut actions);
     // kind filtering (01 §6.2): kind-less command actions drop out of a
     // kind-filtered request; quickfixes match by prefix

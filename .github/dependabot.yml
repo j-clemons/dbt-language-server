@@ -32,6 +32,20 @@ updates:
           - minor
           - patch
 
+  # the DataFusion oracle (its own workspace, excluded from the root one)
+  - package-ecosystem: cargo
+    directory: "/oracles/datafusion"
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
   # GitHub Actions used by ci.yml / release.yml
   - package-ecosystem: github-actions
     directory: "/"

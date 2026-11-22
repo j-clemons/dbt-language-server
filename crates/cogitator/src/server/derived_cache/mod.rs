@@ -19,6 +19,11 @@ use cogitator_analysis::profiles::{load_inventory, ProfileScope, ProfilesInvento
 use serde::Serialize;
 
 mod artifacts;
+mod lineage;
+mod plan;
+mod schemas;
+
+pub use plan::CachedPlan;
 
 /// (mtime secs, mtime nanos, size) — the same freshness idea as the scan
 /// cache; a file that changed under us gets a different stamp.
@@ -67,6 +72,7 @@ pub struct CacheReport {
     pub lineage: CacheSurface,
     pub results: CacheSurface,
     pub artifacts: CacheSurface,
+    pub plans: CacheSurface,
 }
 
 /// (path, scope fingerprint) → (stamp, parsed inventory).
@@ -77,6 +83,10 @@ type LineageMap = HashMap<String, (u64, Arc<Option<ModelLineage>>)>;
 type ResultsSlot = (usize, HashMap<String, (String, Arc<str>)>);
 /// root → ([run_results, manifest, sources] stamps, the parsed set).
 type ArtifactsMap = HashMap<PathBuf, ([Option<FileStamp>; 4], ArtifactSet)>;
+/// uri → ((document generation, plan key), typed lineage).
+type TypedLineageMap = HashMap<String, ((u64, u64), Arc<Option<ModelLineage>>)>;
+/// uri → ((document generation, schema revision), typed plan).
+type PlansMap = HashMap<String, ((u64, u64), Arc<CachedPlan>)>;
 
 #[derive(Default)]
 pub struct DerivedCache {
@@ -86,6 +96,8 @@ pub struct DerivedCache {
     /// Column lineage per uri; only the latest document generation lives.
     lineage: Mutex<LineageMap>,
     lineage_stats: Counters,
+    /// Typed column lineage; only the latest key per uri lives.
+    typed_lineage: Mutex<TypedLineageMap>,
     /// Serialized command results scoped to ONE context snapshot (the
     /// pointer identity of the Arc): a refresh wipes the slot wholesale.
     results: Mutex<ResultsSlot>,
@@ -93,6 +105,11 @@ pub struct DerivedCache {
     /// target/ artifact payloads per root, stamp-guarded like profiles.
     artifacts: Mutex<ArtifactsMap>,
     artifacts_stats: Counters,
+    /// `dbt.queryPlan` results; only the latest revision per uri lives.
+    plans: Mutex<PlansMap>,
+    plans_stats: Counters,
+    /// The project-schema job's snapshot and state, per project root.
+    schemas: schemas::SchemaSlot,
 }
 
 impl DerivedCache {
@@ -197,10 +214,15 @@ impl DerivedCache {
     pub fn clear(&self) {
         self.profiles.lock().expect("profiles cache lock").clear();
         self.lineage.lock().expect("lineage cache lock").clear();
+        self.typed_lineage
+            .lock()
+            .expect("typed lineage lock")
+            .clear();
         let mut slot = self.results.lock().expect("results cache lock");
         slot.0 = 0;
         slot.1.clear();
         self.artifacts.lock().expect("artifacts cache lock").clear();
+        self.plans.lock().expect("plans cache lock").clear();
     }
 
     pub fn report(&self) -> CacheReport {
@@ -215,7 +237,8 @@ impl DerivedCache {
                 &self.profiles_stats,
             ),
             lineage: surface(
-                self.lineage.lock().expect("lineage cache lock").len(),
+                self.lineage.lock().expect("lineage cache lock").len()
+                    + self.typed_lineage.lock().expect("typed lineage lock").len(),
                 &self.lineage_stats,
             ),
             results: surface(
@@ -225,6 +248,10 @@ impl DerivedCache {
             artifacts: surface(
                 self.artifacts.lock().expect("artifacts cache lock").len(),
                 &self.artifacts_stats,
+            ),
+            plans: surface(
+                self.plans.lock().expect("plans cache lock").len(),
+                &self.plans_stats,
             ),
         }
     }

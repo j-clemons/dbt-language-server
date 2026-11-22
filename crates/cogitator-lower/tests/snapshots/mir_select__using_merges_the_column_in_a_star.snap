@@ -1,0 +1,8 @@
+---
+source: crates/cogitator-lower/tests/mir_select.rs
+expression: print_mir(&mir)
+---
+Project id#0:unknown := id#0, x#1:unknown := x#1, y#3:unknown := y#3
+  Join Inner on (id#0 Eq id#2)
+    Scan model l [id#0:unknown, x#1:unknown]
+    Scan model r [id#2:unknown, y#3:unknown]

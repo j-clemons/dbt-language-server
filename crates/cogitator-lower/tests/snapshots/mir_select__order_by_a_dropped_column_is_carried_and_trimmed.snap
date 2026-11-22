@@ -1,0 +1,8 @@
+---
+source: crates/cogitator-lower/tests/mir_select.rs
+expression: print_mir(&mir)
+---
+Project a#0:unknown := a#0
+  Sort b#1
+    Project a#0:unknown := a#0, b#1:unknown := b#1
+      Scan model t [a#0:unknown, b#1:unknown]

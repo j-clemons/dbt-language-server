@@ -2,8 +2,10 @@
 resolver = "2"
 members = ["crates/*"]
 # fuzz is its own workspace: cargo-fuzz builds it with nightly +
-# sanitizer flags that must never leak into ordinary builds
-exclude = ["fuzz"]
+# sanitizer flags that must never leak into ordinary builds.
+# oracles/datafusion is its own workspace too: datafusion pins arrow and
+# sqlparser versions this lockfile moved past (specs/ir-pipeline/07)
+exclude = ["fuzz", "oracles/datafusion"]
 
 [workspace.package]
 version = "0.5.0"
@@ -21,6 +23,10 @@ cogitator-parser = { path = "crates/cogitator-parser" }
 cogitator-analysis = { path = "crates/cogitator-analysis" }
 cogitator-duckdb = { path = "crates/cogitator-duckdb" }
 cogitator-treesitter = { path = "crates/cogitator-treesitter" }
+cogitator-ir = { path = "crates/cogitator-ir" }
+cogitator-sql-front = { path = "crates/cogitator-sql-front" }
+cogitator-lower = { path = "crates/cogitator-lower" }
+cogitator-rules = { path = "crates/cogitator-rules" }
 
 # external (05 §1)
 anyhow = "1"
@@ -39,6 +45,7 @@ tokio = { version = "1", features = [
     "rt-multi-thread", "io-std", "io-util", "process", "sync", "time", "macros", "fs", "tracing",
 ] }
 walkdir = "2"
+toml = "1"
 tree-sitter = "0.27"           # C runtime bindings (06 §3.2)
 tree-sitter-language = "0.1"
 cc = "1"

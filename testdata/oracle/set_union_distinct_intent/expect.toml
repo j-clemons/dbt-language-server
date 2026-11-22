@@ -1,0 +1,22 @@
+rule = "set.union_distinct"
+fix = "UNION to UNION ALL (no proof the arms are disjoint)"
+safety = "N"
+description = "UNION ALL keeps duplicates UNION removes. Equal only when no row repeats within or across the arms."
+
+[[fixtures]]
+name = "overlap_and_duplicates"
+seed = "seed_overlap.sql"
+role = "witness"
+covers = ["duplicates"]
+
+[[fixtures]]
+name = "disjoint_with_a_null"
+seed = "seed_disjoint.sql"
+role = "precondition"
+covers = ["nulls"]
+
+[[fixtures]]
+name = "empty_beta"
+seed = "seed_empty_beta.sql"
+role = "precondition"
+covers = ["empty"]

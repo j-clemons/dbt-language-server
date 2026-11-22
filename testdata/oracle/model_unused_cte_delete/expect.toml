@@ -1,0 +1,16 @@
+rule = "model.unused_cte"
+fix = "delete the unused CTE"
+safety = "P"
+description = "Nothing reads `dead`, so removing it cannot change the rows."
+
+[[fixtures]]
+name = "nulls_and_duplicates"
+seed = "seed.sql"
+role = "preserve"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "empty_orders"
+seed = "seed_empty.sql"
+role = "preserve"
+covers = ["empty"]

@@ -1,0 +1,14 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Complete
+query [0..8]
+  select distinct=None
+    item * exclude=0
+    from source stripe.payments
+--jinja--
+Source Blank "{{ source('stripe', 'payments') }}"
+--outputs--
+--resolutions--
+--degraded--

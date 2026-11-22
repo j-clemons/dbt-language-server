@@ -1,0 +1,26 @@
+---
+source: crates/cogitator-oracle/tests/duckdb_oracle.rs
+expression: shape
+---
+[
+  {
+    "children": [
+      {
+        "children": [],
+        "extra_info_keys": [
+          "Estimated Cardinality",
+          "Filters",
+          "Projections",
+          "Table",
+          "Type"
+        ],
+        "name": "SEQ_SCAN"
+      }
+    ],
+    "extra_info_keys": [
+      "Estimated Cardinality",
+      "Projections"
+    ],
+    "name": "PROJECTION"
+  }
+]

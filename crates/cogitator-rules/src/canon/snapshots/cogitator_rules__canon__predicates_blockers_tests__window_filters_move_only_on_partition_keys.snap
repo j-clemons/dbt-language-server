@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-rules/src/canon/predicates_blockers_tests.rs
+expression: text
+---
+before:
+Filter (a#0 Gt 1)
+  Window rn#2:int64! := row_number
+    Scan model t [a#0:int64!, b#1:int64!]
+after:
+Window rn#2:int64! := row_number
+  Filter (a#0 Gt 1)
+    Scan model t [a#0:int64!, b#1:int64!]

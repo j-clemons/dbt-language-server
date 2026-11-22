@@ -16,6 +16,7 @@ jobs:
       editors: ${{ steps.filter.outputs.editors }}
       shell: ${{ steps.filter.outputs.shell }}
       nix: ${{ steps.filter.outputs.nix }}
+      oracle: ${{ steps.filter.outputs.oracle }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -46,6 +47,17 @@ jobs:
               - '**/*.nix'
               - 'devenv.yaml'
               - '.envrc'
+            oracle:
+              - 'crates/cogitator-duckdb/**'
+              - 'crates/cogitator-oracle/**'
+              - 'crates/cogitator-ir/**'
+              - 'crates/cogitator-sql-front/**'
+              - 'crates/cogitator-lower/**'
+              - 'crates/cogitator-rules/**'
+              - 'oracles/**'
+              - 'testdata/oracle/**'
+              - 'Cargo.lock'
+              - '.github/workflows/ci.yml'
 
   test:
     name: test (${{ matrix.os }})
@@ -92,6 +104,9 @@ jobs:
       - name: Format
         run: cargo fmt --all --check
 
+      - name: Format the isolated DataFusion oracle (not a workspace member)
+        run: cargo fmt --manifest-path oracles/datafusion/Cargo.toml --check
+
       - name: Clippy
         run: cargo clippy --workspace --all-targets --features cogitator/e2e -- -D warnings
       - uses: taiki-e/install-action@v2
@@ -100,6 +115,54 @@ jobs:
       - name: Generated schemas are fresh
         run: just gen-schemas-check
 
+
+  # The engine oracles (specs/ir-pipeline/07): the differential corpus
+  # against DuckDB and DataFusion. Neither engine is in the default build,
+  # so this is the only job that compiles them. DuckDB's C++ goes through
+  # Zig (rust-port/07 §5) via cargo-zigbuild, which also links with Zig:
+  # `zig c++` objects need its libc++, which a plain clang link would not
+  # find. DataFusion is pure Rust.
+  oracle:
+    name: oracle (ubuntu)
+    needs: changes
+    if: needs.changes.outputs.oracle == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install mold (the linker .cargo/config.toml selects on Linux)
+        run: sudo apt-get update && sudo apt-get install -y mold clang
+
+      - name: Setup Zig (C/C++ toolchain, same pin as release.yml)
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.0
+
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild --locked
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            oracles/datafusion
+
+      - name: Format the isolated DataFusion oracle
+        run: cargo fmt --manifest-path oracles/datafusion/Cargo.toml --check
+
+      - name: Lint the isolated DataFusion oracle
+        run: cargo clippy --manifest-path oracles/datafusion/Cargo.toml --all-targets --locked -- -D warnings
+
+      - name: DuckDB oracle
+        run: cargo-zigbuild test -p cogitator-oracle --features duckdb-oracle --target x86_64-unknown-linux-gnu --locked
+
+      - name: DataFusion oracle
+        run: cargo test --manifest-path oracles/datafusion/Cargo.toml --locked
 
   # The editor system suites (specs/neovim-plugin §8): headless Neovim,
   # batch Emacs and the VS Code extension host through the

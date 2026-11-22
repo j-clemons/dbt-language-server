@@ -32,6 +32,10 @@ pub struct CodeActionContext<'a> {
     pub diagnostics: Vec<Diagnostic>,
 }
 
+/// The kind of the `source.fixAll` bundle: a sub-kind of `source.fixAll`,
+/// so a client requesting either one receives it.
+pub const FIX_ALL_KIND: &str = "source.fixAll.cogitator";
+
 /// A CodeAction is either command-only (the dbt workflow set — clients
 /// run `command` through workspace/executeCommand) or an edit-bearing
 /// quickfix; unset members stay off the wire.
@@ -46,6 +50,10 @@ pub struct CodeAction {
     pub edit: Option<WorkspaceEdit>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<Command>,
+    /// Editors apply a preferred action on one key press. Only a fix
+    /// that preserves results is ever set (specs/ir-pipeline/08).
+    #[serde(rename = "isPreferred", skip_serializing_if = "Option::is_none")]
+    pub is_preferred: Option<bool>,
 }
 
 impl CodeAction {
@@ -57,6 +65,7 @@ impl CodeAction {
             diagnostics: None,
             edit: None,
             command: Some(command),
+            is_preferred: None,
         }
     }
 
@@ -68,6 +77,25 @@ impl CodeAction {
             diagnostics: Some(vec![diagnostic]),
             edit: Some(edit),
             command: None,
+            is_preferred: None,
+        }
+    }
+
+    /// Marks this quickfix as the one to apply by default.
+    pub fn preferred(mut self) -> Self {
+        self.is_preferred = Some(true);
+        self
+    }
+
+    /// The bundled `source.fixAll` action (edits only, no diagnostics).
+    pub fn fix_all(title: String, edit: WorkspaceEdit) -> Self {
+        CodeAction {
+            title,
+            kind: Some(FIX_ALL_KIND),
+            diagnostics: None,
+            edit: Some(edit),
+            command: None,
+            is_preferred: None,
         }
     }
 

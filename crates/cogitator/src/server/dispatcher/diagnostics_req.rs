@@ -88,15 +88,17 @@ impl Dispatcher {
             features::lint::LintOptions::from_flags(self.toggles.lints.load(Ordering::Relaxed));
         let derived = self.derived.clone();
         let artifact_cap = self.limits.artifact_cap_bytes.load(Ordering::Relaxed);
+        let perf = self.perf_settings();
         self.offload_blocking(id, "textDocument/diagnostic", move || {
             // the pull path affords lineage (cached per generation), so
-            // the undocumented-columns check runs here, not on push
+            // the undocumented-columns and contract checks run here, not
+            // on push; typed, so an expanded star counts as its columns
             let lineage = (lints.undocumented_columns && !uri.ends_with(".yml")).then(|| {
-                crate::server::handlers::commands::lineage_for(
+                crate::server::handlers::lineage::typed_lineage_for(
+                    &snap,
                     &derived,
-                    &snap.ctx,
-                    snap.doc.as_deref(),
                     &uri,
+                    artifact_cap,
                 )
             });
             let mut items = crate::server::diagnostics::static_diagnostics(
@@ -109,6 +111,22 @@ impl Dispatcher {
             if let Some(root) = snap.ctx.project_root.as_deref() {
                 let set = derived.artifacts(root, artifact_cap);
                 items.extend(features::artifact_diagnostics(&snap.ctx, &uri, &set));
+            }
+            if perf.active() {
+                if let (Some(doc), Some(plan)) = (
+                    snap.doc.as_deref(),
+                    crate::server::handlers::plan::document_plan(
+                        &snap,
+                        &derived,
+                        &uri,
+                        artifact_cap,
+                        perf.catalog_stats,
+                    ),
+                ) {
+                    items.extend(crate::server::diagnostics::perf_diagnostics(
+                        doc, &plan, &perf,
+                    ));
+                }
             }
             crate::server::reply::Reply::result(&FullDocumentDiagnosticReport {
                 kind: "full",

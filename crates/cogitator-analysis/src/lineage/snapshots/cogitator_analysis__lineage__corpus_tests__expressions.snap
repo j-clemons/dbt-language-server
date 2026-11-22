@@ -1,0 +1,29 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(text, &Dialect::new(*dialect))"
+---
+select case when a > 1 then b else c end as v, cast(d as int) as e,
+coalesce(f, g) as h, i between j and k as l, m like n as o,
+p in (q, r) as s
+from {{ ref('z') }}
+---
+v <-
+  model z.a
+  model z.b
+  model z.c
+e <-
+  model z.d
+h <-
+  model z.f
+  model z.g
+l <-
+  model z.i
+  model z.j
+  model z.k
+o <-
+  model z.m
+  model z.n
+s <-
+  model z.p
+  model z.q
+  model z.r

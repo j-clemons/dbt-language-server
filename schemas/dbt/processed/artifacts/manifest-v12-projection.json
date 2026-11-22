@@ -39,7 +39,9 @@
      },
      "patch_path": {
       "type": "string"
-     }
+     },
+     "relation_name": {},
+     "config": {}
     }
    }
   }

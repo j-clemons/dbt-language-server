@@ -1,0 +1,10 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(\"with C as (select Id from {{ ref('m') }}) select c.ID, ID as again from c\")"
+---
+with C as (select Id from {{ ref('m') }}) select c.ID, ID as again from c
+---
+ID <-
+  model m.Id
+again <-
+  model m.Id

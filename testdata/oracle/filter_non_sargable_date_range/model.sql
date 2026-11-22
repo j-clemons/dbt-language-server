@@ -1,0 +1,1 @@
+SELECT id, ts FROM events WHERE CAST(ts AS DATE) = DATE '2024-01-01'

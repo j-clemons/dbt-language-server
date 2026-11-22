@@ -1,6 +1,7 @@
 //! The dbt.status and dbt.setTarget wire payloads: pure assembly over the
 //! dispatcher's snapshots, so the report shape lives in one typed place.
 
+use cogitator_analysis::features::plan::diagnostics_config::PerfSettings;
 use cogitator_analysis::DbtContext;
 use serde::Serialize;
 
@@ -18,6 +19,27 @@ pub struct StatusReport {
     pub caches: CacheReport,
     /// The cogitator.yml watcher's view: path, loaded, last error.
     pub config: ConfigStatus,
+    /// The active perf diagnostics configuration (also in dbt.doctor).
+    pub perf: PerfStatus,
+}
+
+/// The perf diagnostics summary shared by dbt.status and dbt.doctor.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerfStatus {
+    pub profile: &'static str,
+    pub catalog_stats: bool,
+    pub enabled_rules: usize,
+}
+
+impl PerfStatus {
+    pub fn of(settings: &PerfSettings) -> Self {
+        PerfStatus {
+            profile: settings.profile.as_str(),
+            catalog_stats: settings.catalog_stats,
+            enabled_rules: settings.enabled_rule_count(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -88,6 +110,7 @@ pub fn status_report(
     caches: CacheReport,
     config: ConfigStatus,
     extra_roots: Vec<String>,
+    perf: PerfStatus,
 ) -> StatusReport {
     let active_profile = if cfg.profile.is_empty() {
         ctx.project.profile.clone()
@@ -131,5 +154,6 @@ pub fn status_report(
         },
         caches,
         config,
+        perf,
     }
 }

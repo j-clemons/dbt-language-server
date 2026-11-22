@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-analysis/src/lineage/typed_tests.rs
+expression: "typed(\"select a.*, u.* from {{ ref('a') }} a join {{ ref('u') }} u on true\",\n&e)"
+---
+select a.*, u.* from {{ ref('a') }} a join {{ ref('u') }} u on true
+---
+id <-
+  model a.id
+x <-
+  model a.x
+u.* <-
+  model u.*

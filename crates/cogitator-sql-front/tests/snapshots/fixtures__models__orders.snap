@@ -1,0 +1,7 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Declined
+--degraded--
+JinjaControlFlow control flow `for` needs the compiled fallback

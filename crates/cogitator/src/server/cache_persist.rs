@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use cogitator_analysis::context::persist::PersistedScan;
 use serde::{Deserialize, Serialize};
 
-const FORMAT: u32 = 2; // 2: RawDocsBlock carries the name position
+const FORMAT: u32 = 4; // 4: ColumnEntry carries tests; 3: ColumnEntry carries data_type; 2: RawDocsBlock name position
 
 #[derive(Serialize, Deserialize)]
 struct PersistedFile {

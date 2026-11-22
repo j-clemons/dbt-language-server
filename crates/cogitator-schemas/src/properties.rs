@@ -11,6 +11,10 @@ use cogitator_lsp::Position;
 use crate::generated::dbt_yml_files::DbtYmlFiles;
 use crate::yaml;
 
+mod columns;
+
+use columns::{column_sides, columns_of, prune_columns, ColumnSide};
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct PropertiesFile {
     pub models: Vec<ModelEntry>,
@@ -42,6 +46,30 @@ pub struct ColumnEntry {
     pub description: String,
     /// Position of the column's `name:` value node in the YAML file.
     pub name_pos: Position,
+    /// `data_type:` as written, unparsed. `None` when absent, empty or not a
+    /// string. Columns filled from the catalog or warehouse leave this unset.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data_type: Option<String>,
+    /// Column tests (`tests:` or `data_tests:`), in file order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tests: Vec<ColumnTest>,
+}
+
+/// One generic test on a column. `strict` says the test passing proves the
+/// property for every row: no `where:` filter, not `severity: warn`, not
+/// disabled.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ColumnTest {
+    /// Lower-cased test name, without a `dbt.` prefix.
+    pub name: String,
+    pub strict: bool,
+}
+
+impl ColumnEntry {
+    /// True when a strict test named `name` covers this column.
+    pub fn proven_by(&self, name: &str) -> bool {
+        self.tests.iter().any(|t| t.strict && t.name == name)
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -88,7 +116,7 @@ pub fn parse_properties(text: &str, path: &Path) -> Result<PropertiesFile> {
         Position,
         Option<String>,
         Vec<String>,
-        Vec<Position>,
+        Vec<ColumnSide>,
         Governance,
     );
     let model_positions: Vec<ModelSide> = yaml::get(&marked, "models")
@@ -102,14 +130,14 @@ pub fn parse_properties(text: &str, path: &Path) -> Result<PropertiesFile> {
                         name_position(m),
                         alias,
                         tags_of(m),
-                        column_positions(m),
+                        column_sides(m),
                         governance_of(m),
                     )
                 })
                 .collect()
         })
         .unwrap_or_default();
-    type TableSide = (Position, Vec<Position>);
+    type TableSide = (Position, Vec<ColumnSide>);
     let source_nodes: Vec<(Position, Vec<TableSide>)> = yaml::get(&marked, "sources")
         .map(|sources| {
             yaml::items(sources)
@@ -117,7 +145,7 @@ pub fn parse_properties(text: &str, path: &Path) -> Result<PropertiesFile> {
                     let tables = yaml::get(s, "tables")
                         .map(|t| {
                             yaml::items(t)
-                                .map(|table| (name_position(table), column_positions(table)))
+                                .map(|table| (name_position(table), column_sides(table)))
                                 .collect()
                         })
                         .unwrap_or_default();
@@ -132,14 +160,14 @@ pub fn parse_properties(text: &str, path: &Path) -> Result<PropertiesFile> {
         .iter()
         .enumerate()
         .map(|(i, m)| {
-            let (name_pos, alias, tags, column_pos, governance) =
+            let (name_pos, alias, tags, column_side, governance) =
                 model_positions.get(i).cloned().unwrap_or_default();
             ModelEntry {
                 name: m.name.clone(),
                 name_pos,
                 description: m.description.clone().unwrap_or_default(),
                 alias,
-                columns: columns_of(&m.columns, &column_pos),
+                columns: columns_of(&m.columns, &column_side),
                 tags,
                 access: governance.access,
                 group: governance.group,
@@ -169,7 +197,7 @@ pub fn parse_properties(text: &str, path: &Path) -> Result<PropertiesFile> {
                     .iter()
                     .enumerate()
                     .map(|(j, t)| {
-                        let (name_pos, column_pos) =
+                        let (name_pos, column_side) =
                             table_positions.get(j).cloned().unwrap_or_default();
                         TableEntry {
                             name: t.name.clone(),
@@ -177,7 +205,7 @@ pub fn parse_properties(text: &str, path: &Path) -> Result<PropertiesFile> {
                             description: t.description.clone().unwrap_or_default(),
                             identifier: t.identifier.clone(),
                             loader: t.loader.clone(),
-                            columns: columns_of(&t.columns, &column_pos),
+                            columns: columns_of(&t.columns, &column_side),
                         }
                     })
                     .collect(),
@@ -274,39 +302,6 @@ fn prune_for_server(value: &mut serde_json::Value) {
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-fn columns_of(
-    columns: &[crate::generated::dbt_yml_files::ColumnProperties],
-    positions: &[Position],
-) -> Vec<ColumnEntry> {
-    columns
-        .iter()
-        .enumerate()
-        .map(|(i, c)| ColumnEntry {
-            name: c.name.clone(),
-            description: c.description.clone().unwrap_or_default(),
-            name_pos: positions.get(i).copied().unwrap_or_default(),
-        })
-        .collect()
-}
-
-/// Positions of each `columns[j].name` value node of one model/table entry.
-fn column_positions(entry: &saphyr::MarkedYaml<'_>) -> Vec<Position> {
-    yaml::get(entry, "columns")
-        .map(|columns| yaml::items(columns).map(name_position).collect())
-        .unwrap_or_default()
-}
-
-fn prune_columns(map: &mut serde_json::Map<String, serde_json::Value>) {
-    use serde_json::Value;
-    if let Some(Value::Array(columns)) = map.get_mut("columns") {
-        for c in columns {
-            if let Value::Object(cmap) = c {
-                cmap.retain(|k, _| k == "name" || k == "description");
             }
         }
     }

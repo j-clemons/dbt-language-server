@@ -1,0 +1,20 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(&text, &dialect)"
+---
+select
+    customer_id,
+    count(order_id) as order_count,
+    min(order_date) as first_order
+
+from {{ ref('orders') }}
+
+group by customer_id
+
+---
+customer_id <-
+  model orders.customer_id
+order_count <-
+  model orders.order_id
+first_order <-
+  model orders.order_date

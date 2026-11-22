@@ -1,0 +1,20 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"select\\n\",\n\"  (select max(v) from {{ ref('b') }} where b.id = a.id) as scalar_col,\\n\",\n\"  exists (select * from {{ ref('c') }} c where c.id = a.id) as exists_col,\\n\",\n\"  a.x in (select y from {{ ref('d') }}) as in_col\\n\",\n\"from {{ ref('a') }} as a\",))"
+---
+select
+  (select max(v) from {{ ref('b') }} where b.id = a.id) as scalar_col,
+  exists (select * from {{ ref('c') }} c where c.id = a.id) as exists_col,
+  a.x in (select y from {{ ref('d') }}) as in_col
+from {{ ref('a') }} as a
+---
+scalar_col <-
+  model b.v
+  model b.id
+  model a.id
+exists_col <-
+  model c.id
+  model a.id
+in_col <-
+  model d.y
+  model a.x

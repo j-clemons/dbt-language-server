@@ -51,13 +51,18 @@ across versions (08 §4):
      over open objects — serde would match the first branch for every
      row (sources.json results: RuntimeError | Output). One merged
      object reads every variant's fields leniently instead.
+  j. the fields named in RELAX_TO_ANY    -> {} (any JSON value). The
+     adapter reads them out of a serde_json::Value and maps an unexpected
+     shape to None, so one odd stat cannot reject the whole artifact.
 
 --mode=manifest-projection ignores the input's structure: it ASSERTS every
 projected field name still occurs in the pristine 946 KB manifest schema
 (an upstream rename fails regeneration loudly instead of drifting
 silently), then emits the small projection below — the only part of the
 manifest the server reads. typifying the whole schema would cost thousands
-of types and minutes of macro expansion for two lookups.
+of types and minutes of macro expansion for two lookups. `relation_name`
+and `config` are emitted as {} so an adapter-specific shape degrades one
+field in the adapter rather than failing the manifest.
 
 Usage: preprocess.py [--mode=yaml|artifact|manifest-projection] <in.json> <out.json>
 """
@@ -92,6 +97,15 @@ def is_string_enum(node, root) -> bool:
         return False
     enum = node.get("enum")
     return isinstance(enum, list) and all(isinstance(x, str) for x in enum)
+
+
+# rule (j): by object title. A listed field missing from its object fails
+# regeneration, the same drift guard the manifest projection has.
+RELAX_TO_ANY = {
+    "CatalogTable": ["stats"],
+    "CatalogMetadata": ["generated_at"],
+    "RunResultOutput": ["execution_time"],
+}
 
 
 def patch_node(node: dict, keep_null_branches: bool = False) -> None:
@@ -193,6 +207,11 @@ def patch_artifact_node(node: dict, root: dict) -> None:
     if isinstance(node.get("const"), str):
         node.pop("const")
         node.setdefault("type", "string")
+    # rule (j)
+    for name in RELAX_TO_ANY.get(node.get("title"), ()):
+        props = node.get("properties") or {}
+        assert name in props, f"{node['title']}.{name} is gone upstream"
+        props[name] = {}
 
 
 def walk(node, root, artifact: bool) -> None:
@@ -216,10 +235,21 @@ def walk(node, root, artifact: bool) -> None:
 # next consumer); drives both the drift assertion and the emitted schema
 PROJECTION_NODE_FIELDS = ["resource_type", "name", "original_file_path", "attached_node", "patch_path"]
 PROJECTION_META_FIELDS = ["dbt_schema_version", "dbt_version", "generated_at"]
+# any-valued node fields: the adapter reads them from a serde_json::Value
+PROJECTION_NODE_ANY_FIELDS = ["relation_name", "config"]
+# config keys the adapter reads that the pristine schema names; partition_by,
+# cluster_by and indexes are adapter-specific, so upstream never declares them
+PROJECTION_CONFIG_KEYS = ["materialized", "unique_key", "incremental_strategy"]
 
 
 def manifest_projection(pristine_text: str) -> dict:
-    for name in PROJECTION_NODE_FIELDS + PROJECTION_META_FIELDS + ["nodes", "metadata"]:
+    for name in (
+        PROJECTION_NODE_FIELDS
+        + PROJECTION_NODE_ANY_FIELDS
+        + PROJECTION_CONFIG_KEYS
+        + PROJECTION_META_FIELDS
+        + ["nodes", "metadata"]
+    ):
         assert f'"{name}"' in pristine_text, (
             f"projected field {name!r} no longer appears in the pristine "
             "manifest schema — upstream renamed it; update the projection"
@@ -241,7 +271,10 @@ def manifest_projection(pristine_text: str) -> dict:
                 "additionalProperties": {
                     "title": "ManifestProjectionNode",
                     "type": "object",
-                    "properties": {name: dict(string) for name in PROJECTION_NODE_FIELDS},
+                    "properties": {
+                        **{name: dict(string) for name in PROJECTION_NODE_FIELDS},
+                        **{name: {} for name in PROJECTION_NODE_ANY_FIELDS},
+                    },
                 },
             },
         },

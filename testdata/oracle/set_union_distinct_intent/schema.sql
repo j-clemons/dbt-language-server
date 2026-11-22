@@ -1,0 +1,2 @@
+CREATE TABLE alpha (id INTEGER);
+CREATE TABLE beta (id INTEGER);

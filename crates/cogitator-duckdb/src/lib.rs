@@ -72,6 +72,9 @@ fn blank(bytes: &mut [u8]) {
     }
 }
 
+#[cfg(feature = "duckdb-oracle")]
+pub mod oracle;
+
 #[cfg(feature = "duckdb-parser")]
 pub mod engine {
     //! In-process DuckDB 2.0 parser access (07 §2): one lazy in-memory

@@ -260,3 +260,31 @@ fn workspace_diagnostics_full_then_unchanged() {
 
     lsp.shutdown();
 }
+
+/// With the project schemas in hand a `select *` passes a column through
+/// to a named output, so the column closure can trace it.
+#[test]
+fn impact_traces_a_column_through_a_star_over_a_closed_schema() {
+    let project = jaffle();
+    let star = project.root.join("models/star_reader.sql");
+    std::fs::write(&star, "select * from {{ ref('stg_customers') }}\n").unwrap();
+    let (mut lsp, _uri) = project.booted();
+
+    let report = lsp.wait_until("the star expands in dbt.impact", |lsp| {
+        let impact = lsp.request(
+            "workspace/executeCommand",
+            serde_json::json!({"command": "dbt.impact",
+                               "arguments": [{"model": "stg_customers", "column": "customer_id"}]}),
+        );
+        let report = impact["result"].clone();
+        report["columnHits"]
+            .as_array()
+            .is_some_and(|hits| {
+                hits.iter()
+                    .any(|h| h["model"] == "star_reader" && h["column"] == "customer_id")
+            })
+            .then_some(report)
+    });
+    assert!(report["compiledLineage"].is_null(), "{report}");
+    lsp.shutdown();
+}

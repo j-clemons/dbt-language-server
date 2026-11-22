@@ -1,0 +1,36 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Complete
+query [327..335]
+  cte source
+    query [147..155]
+      select distinct=None
+        item * exclude=0
+        from model raw_orders
+  cte renamed
+    query [208..305]
+      select distinct=None
+        item id as order_id
+        item user_id as customer_id
+        item order_date
+        item status
+        from cte source
+  select distinct=None
+    item * exclude=0
+    from cte renamed
+--jinja--
+Comment Blank "{#-\n    Normally we would select from the table here, but we are using seeds to load\n    our data in this project\n    #}"
+Ref Blank "{{ ref('raw_orders') }}"
+--outputs--
+order_id
+customer_id
+order_date
+status
+--resolutions--
+id Some(OpenSchema(#1))
+user_id Some(OpenSchema(#1))
+order_date Some(OpenSchema(#1))
+status Some(OpenSchema(#1))
+--degraded--

@@ -1,0 +1,15 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Complete
+query [40..52]
+  select distinct=None
+    item count() as order_count
+    from model customers
+--jinja--
+Ref Blank "{{ ref('customers') }}"
+--outputs--
+order_count
+--resolutions--
+--degraded--

@@ -1,0 +1,20 @@
+[package]
+name = "cogitator-oracle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+# Run the differential corpus against the bundled DuckDB engine. Off by
+# default: without it this crate builds no C++ (specs/ir-pipeline/07).
+duckdb-oracle = ["dep:cogitator-duckdb", "cogitator-duckdb/duckdb-oracle"]
+
+[dependencies]
+cogitator-duckdb = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
+tempfile = { workspace = true }

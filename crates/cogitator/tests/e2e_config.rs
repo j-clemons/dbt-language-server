@@ -204,7 +204,7 @@ fn scan_cache_persists_across_sessions() {
     assert!(cache.is_file(), "first session persisted the scan cache");
     let text = std::fs::read_to_string(&cache).unwrap();
     assert!(
-        text.starts_with("{\"format\":2,"),
+        text.starts_with("{\"format\":4,"),
         "versioned header: {}",
         &text[..60.min(text.len())]
     );

@@ -1,0 +1,18 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(text, &Dialect::new(*dialect))"
+---
+with orders as (
+    select order_id, customer_id from {{ ref('stg_orders') }}
+),
+payments as (
+    select order_id, amount from {{ source('stripe', 'payment') }}
+)
+select o.customer_id, p.amount
+from orders o join payments p on o.order_id = p.order_id
+
+---
+customer_id <-
+  model stg_orders.customer_id
+amount <-
+  source stripe.payment.amount

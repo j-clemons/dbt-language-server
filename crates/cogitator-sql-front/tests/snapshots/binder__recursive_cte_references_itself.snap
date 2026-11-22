@@ -1,0 +1,28 @@
+---
+source: crates/cogitator-sql-front/tests/binder.rs
+expression: "report(text, &build(text))"
+---
+fidelity Complete
+query [78..86]
+  cte r recursive
+    query [21..57]
+      setop Union all=true by_name=false
+        query [21..29]
+          select distinct=None
+            item 1 as n
+        query [45..57]
+          select distinct=None
+            item (n Plus 1)
+            from cte r
+            where (n Lt 5)
+  select distinct=None
+    item n
+    from cte r
+--jinja--
+--outputs--
+n
+--resolutions--
+n Some(OpenSchema(#0))
+n Some(OpenSchema(#0))
+n Some(Bound { from: #1, col: 0 })
+--degraded--

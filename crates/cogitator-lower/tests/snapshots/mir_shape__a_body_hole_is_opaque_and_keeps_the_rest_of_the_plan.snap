@@ -1,0 +1,9 @@
+---
+source: crates/cogitator-lower/tests/mir_shape.rs
+expression: "print_mir(&lowered.value.expect(\"a plan\"))"
+---
+Project x#1:unknown := x#1
+  CteRef #0 [x#1:unknown]
+-- ctes
+cte#0 c out=[x#0:unknown]
+  Opaque ParseError open=true [x#0:unknown]

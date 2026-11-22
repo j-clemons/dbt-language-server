@@ -30,6 +30,7 @@ pub struct DoctorReport {
     pub lint_enabled: Vec<&'static str>,
     pub running_jobs: Vec<DoctorJob>,
     pub config: super::super::config_watcher::ConfigStatus,
+    pub perf: super::super::status::PerfStatus,
 }
 
 #[derive(Debug, Serialize)]
@@ -71,6 +72,7 @@ pub fn doctor(
     jobs: Vec<(u64, String)>,
     config: super::super::config_watcher::ConfigStatus,
     artifact_cap: u64,
+    perf: super::super::status::PerfStatus,
 ) -> Reply {
     let ctx = &snap.ctx;
     let binary = if snap.fusion_path.is_empty() {
@@ -140,6 +142,7 @@ pub fn doctor(
             .map(|(token, label)| DoctorJob { token, label })
             .collect(),
         config,
+        perf,
     };
     Reply::result(&report)
 }

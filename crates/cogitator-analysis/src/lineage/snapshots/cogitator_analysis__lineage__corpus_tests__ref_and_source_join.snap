@@ -1,0 +1,15 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(text, &Dialect::new(*dialect))"
+---
+select a.x, b.y, a.x + b.y as z
+from {{ ref('a') }} as a
+join {{ source('s', 't') }} b on a.id = b.id
+---
+x <-
+  model a.x
+y <-
+  source s.t.y
+z <-
+  model a.x
+  source s.t.y

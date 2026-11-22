@@ -1,0 +1,9 @@
+---
+source: crates/cogitator-rules/src/canon/simplify_tests.rs
+expression: text
+---
+before:
+Filter (1 Eq 1)
+  Scan model t [x#0:bool, n#1:int64!]
+after:
+Scan model t [x#0:bool, n#1:int64!]

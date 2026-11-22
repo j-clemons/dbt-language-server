@@ -149,7 +149,7 @@ Every command takes **one argument object**, not positional values:
 | `dbt.compiledSql` | `{model, uri, content}` or `null` | WARNING when the file is over the wire cap (2 MiB default; `limits.compiled_sql_mib`) |
 | `dbt.openModel` | `null` | showDocument to the model's file (`{uri}` or `{model}`), or a warning |
 | `dbt.setProfilesDir` | `{dir}` or `null` | live profiles-directory switch: profile/target overrides reset, context refresh, confirmation message — no client restart |
-| `dbt.cache` | `{profiles, lineage, results, artifacts}` each `{entries, hits, misses}` | `{action: "clear"}` empties the derived caches and refreshes the context |
+| `dbt.cache` | `{profiles, lineage, results, artifacts, plans}` each `{entries, hits, misses}` | `{action: "clear"}` empties the derived caches and refreshes the context |
 | `dbt.reloadConfig` | `null` | forces an immediate cogitator.yml reload pass (otherwise: 2 s stamp poll / didSave fast-path) |
 | `dbt.sourceFreshness` | `{token}` (immediately) | async `dbt source freshness` (project-wide); the refreshed sources.json feeds the freshness lenses on source YAML entries |
 | `dbt.runSelection` | `{token}` or InvalidParams | runs dbt with an arbitrary validated selector (`{selector, kind?: run\|test\|build\|compile}`) |
@@ -158,6 +158,7 @@ Every command takes **one argument object**, not positional values:
 | `dbt.impact` | `{model, column, summary, models: [{name, uri, depth}], exposures, columnHits, truncated}` | none (column hits are an under-approximation: `*` and unresolved lineage stay out; lineage fan-out capped at 200 models) |
 | `dbt.expandJinja` | `{sql}` or InvalidParams Guidance | renders the open buffer with minijinja — project macros, ref/source → relations, var(), config()/is_incremental()/target stubs; adapter calls need a real compile |
 | `dbt.doctor` | `{serverVersion, projectRoot/Name, dialect, dbtBinary(+Found), profiles, artifacts (ages incl. catalogAgeS + driftCount), caches, scanCachePersisted, graph, lintEnabled, runningJobs, config}` | none — the one health report :checkhealth/doctor render |
+| `dbt.queryPlan` | `{model, dialect, backend, schemaRevision, status: complete\|partial\|declined, guidance, origin, levels: {hir, mir, lir: {available, fidelity, text, unavailable, degradations, violations}}, findings, trace: {entries, incomplete}, needs: {available, missing}}` | none (read-only): runs the IR pipeline on the open buffer or file; a level dropped by a verifier violation is shown as unavailable; models with control flow other than a lone `is_incremental()` come back `declined` with a Guidance pointing at `dbt compile` until compiled fallback lands — :DbtPlan |
 | `dbt.preview` | `{token}` (job started) | `dbt show --select <model> --limit N` (N from `limit`, default 50) through the job registry; on success the result table lands in `target/.cogitator/preview/<model>.txt` and opens via showDocument — :DbtPreview [limit] |
 
 On duckdb-feature builds with cogitator.yml `warehouse: {columns:
@@ -411,6 +412,7 @@ vim.lsp.enable("cogitator")
 | `:DbtTarget` | `dbt.profiles` + `dbt.setTarget` | picker over allowed profile×target; the choice persists per project in the manager store, `<leader>dT` |
 | `:DbtProfiles [dir]` | `dbt.setProfilesDir` | no arg: candidate report; with dir: live switch (persisted per root; restart fallback for servers without the command) |
 | `:DbtProjects` | — (manager store) | picker over every project root ever attached; opening its dbt_project.yml attaches the per-root client, `<leader>dP` |
+| `:DbtPlan` | `dbt.queryPlan` | each IR level, findings and the rule trace (including skip reasons) in a scratch split |
 | `:DbtQuery` | `dbt.relation` | `select * from <relation> limit <query_limit>` through vim-dadbod when configured, else a scratch sql buffer, `<leader>dx` |
 
 The manager store is a JSON file (default

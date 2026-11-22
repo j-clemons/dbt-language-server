@@ -28,6 +28,12 @@ pub struct FileConfig {
     pub warehouse: WarehouseSection,
     #[serde(default)]
     pub log: LogSection,
+    #[serde(default)]
+    pub perf: PerfSection,
+    /// Rule id → off | hint | info | warning. Sorted, so applying it is
+    /// deterministic; ids and values are validated, not assumed.
+    #[serde(default)]
+    pub perf_rules: std::collections::BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
@@ -76,6 +82,14 @@ impl LintSection {
         bit(self.dead_models, lint_flags::DEAD_MODELS);
         flags
     }
+}
+
+/// Query-plan performance diagnostics (specs/ir-pipeline/08).
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+pub struct PerfSection {
+    /// off (default) | recommended | strict.
+    pub profile: Option<String>,
+    pub catalog_stats: Option<bool>,
 }
 
 /// The editor-visible log stream (05 §6.3 addendum).
@@ -148,6 +162,8 @@ const ROOT_KEYS: &[&str] = &[
     "lint",
     "log",
     "warehouse",
+    "perf",
+    "perf_rules",
 ];
 const PROFILES_KEYS: &[&str] = &["dir", "profile", "target", "allow"];
 const LIMITS_KEYS: &[&str] = &["compiled_sql_mib", "artifact_mib"];
@@ -162,6 +178,33 @@ const LINT_KEYS: &[&str] = &[
 ];
 const LOG_KEYS: &[&str] = &["client_level"];
 const WAREHOUSE_KEYS: &[&str] = &["columns"];
+const PERF_KEYS: &[&str] = &["profile", "catalog_stats"];
+// dotted ids stay plain keys here: did-you-mean works unchanged
+const PERF_RULE_KEYS: &[&str] = &[
+    "join.left_nullified",
+    "join.cartesian",
+    "join.distinct_fanout",
+    "model.unused_cte",
+    "cross.select_star_chain",
+    "filter.non_sargable",
+    "incr.missing_guard",
+    "incr.subquery_watermark",
+    "set.union_distinct",
+    "cross.unused_column",
+    "cross.filter_late",
+    "cross.ephemeral_repeat",
+    "cross.duplicate_logic",
+    "order.in_cte",
+    "subq.not_in_nullable",
+    "subq.correlated",
+    "join.redundant_left",
+    "join.key_type_mismatch",
+    "filter.partition_or",
+    "filter.cluster_order",
+    "filter.constant_false",
+    "limit.no_scan_reduction",
+    "incr.no_unique_key",
+];
 
 /// Unknown keys warn with did-you-mean — never a hard error, so a
 /// typo'd key cannot take the rest of the file down.
@@ -200,6 +243,8 @@ pub fn unknown_key_warnings(text: &str, path: &Path) -> Vec<Guidance> {
         ("lint", LINT_KEYS),
         ("log", LOG_KEYS),
         ("warehouse", WAREHOUSE_KEYS),
+        ("perf", PERF_KEYS),
+        ("perf_rules", PERF_RULE_KEYS),
     ] {
         if let Some(node) = get(root, section) {
             for (key, _) in entries(node) {
@@ -211,6 +256,7 @@ pub fn unknown_key_warnings(text: &str, path: &Path) -> Vec<Guidance> {
 }
 
 mod apply;
+mod perf;
 
 pub use apply::{apply, diff, launch_filter, Baseline};
 
@@ -231,6 +277,8 @@ mod tests {
             (LINT_KEYS, "lint"),
             (LOG_KEYS, "log"),
             (WAREHOUSE_KEYS, "warehouse"),
+            (PERF_KEYS, "perf"),
+            (PERF_RULE_KEYS, "perf_rules"),
         ] {
             let schema: Vec<&str> = section(name)
                 .expect(name)

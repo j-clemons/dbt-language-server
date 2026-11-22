@@ -3,8 +3,10 @@
 //! compiles. State mutation stays on the dispatcher task (05 §6.2).
 
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
 use cogitator_analysis::features;
+use cogitator_analysis::features::plan::diagnostics_config::PerfSettings;
 
 use cogitator_lsp::{Diagnostic, DidChangeParams, DidOpenParams, DidSaveParams, Envelope};
 
@@ -84,8 +86,47 @@ impl Dispatcher {
         if let Some(root) = ctx.project_root.as_deref() {
             let set = self.derived.artifacts_cached(root);
             items.extend(features::artifact_diagnostics(&ctx, uri, &set));
+            items.extend(self.perf_diagnostics_cached(&ctx, uri, &set));
         }
         items
+    }
+
+    /// Plan diagnostics from a plan the pull path or `dbt.queryPlan`
+    /// already computed for this exact text and schema. This path never
+    /// plans: no cached plan means none here.
+    fn perf_diagnostics_cached(
+        &self,
+        ctx: &Arc<cogitator_analysis::DbtContext>,
+        uri: &str,
+        artifacts: &cogitator_analysis::artifacts::ArtifactSet,
+    ) -> Vec<Diagnostic> {
+        let perf = self.perf_settings();
+        if !perf.active() {
+            return Vec::new();
+        }
+        let Some(doc) = self.documents.get(uri) else {
+            return Vec::new();
+        };
+        let key = crate::server::handlers::plan::plan_key(
+            ctx,
+            &self.derived,
+            artifacts,
+            uri,
+            perf.catalog_stats,
+        );
+        self.derived
+            .plan_cached(uri, doc.generation, key)
+            .map(|plan| crate::server::diagnostics::perf_diagnostics(doc, &plan, &perf))
+            .unwrap_or_default()
+    }
+
+    /// The live perf settings: a cheap Arc clone.
+    pub(super) fn perf_settings(&self) -> Arc<PerfSettings> {
+        self.toggles
+            .perf
+            .read()
+            .expect("perf settings lock")
+            .clone()
     }
 
     /// Push pipeline (didOpen/didSave). Fusion owns publishes when enabled

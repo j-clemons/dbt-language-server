@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-rules/src/canon/required_columns_tests.rs
+expression: text
+---
+before:
+Project a#0:int64! := a#0
+  Project a#0:int64! := a#0, b#1:int64! := b#1, c#2:int64! := c#2
+    Scan model t [a#0:int64!, b#1:int64!, c#2:int64!]
+after:
+Project a#0:int64! := a#0
+  Project a#0:int64! := a#0
+    Scan model t [a#0:int64!]

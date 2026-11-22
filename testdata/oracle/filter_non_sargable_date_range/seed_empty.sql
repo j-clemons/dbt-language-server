@@ -1,0 +1,1 @@
+-- events stays empty: neither form may invent a row

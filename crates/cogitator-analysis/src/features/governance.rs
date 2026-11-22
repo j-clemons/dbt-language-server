@@ -53,8 +53,8 @@ pub fn private_ref_diagnostics(ctx: &DbtContext, doc: &Document, uri: &str) -> V
 
 /// Contract drift: `contract.enforced: true` promises the YAML columns
 /// are exactly what the model produces. Column sets are compared by
-/// name, case-insensitively; a `select *` (unresolvable production)
-/// disables the check rather than guessing.
+/// name, case-insensitively; a `select *` the project's schemas could
+/// not expand disables the check rather than guessing.
 pub fn contract_diagnostics(
     ctx: &DbtContext,
     uri: &str,
@@ -84,18 +84,19 @@ pub fn contract_diagnostics(
         .filter(|name| !declared.iter().any(|d| d.eq_ignore_ascii_case(name)))
         .copied()
         .collect();
+    let note = lineage.origin_note();
     let mut out = Vec::new();
     if !missing.is_empty() {
         out.push(drift(format!(
             "contracted column(s) the model never produces: {} — \
-             dbt build will fail this contract",
+             dbt build will fail this contract{note}",
             missing.join(", ")
         )));
     }
     if !undeclared.is_empty() {
         out.push(drift(format!(
             "produced column(s) missing from the enforced contract: {} — \
-             add them to the YAML entry",
+             add them to the YAML entry{note}",
             undeclared.join(", ")
         )));
     }

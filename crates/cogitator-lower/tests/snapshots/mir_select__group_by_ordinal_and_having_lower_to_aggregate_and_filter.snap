@@ -1,0 +1,8 @@
+---
+source: crates/cogitator-lower/tests/mir_select.rs
+expression: print_mir(&mir)
+---
+Project k#0:unknown := k#0, total#3:unknown := ?#2
+  Filter (?#2 Gt 0)
+    Aggregate keys=[k#0:unknown := k#0] aggs=[?#2:unknown := sum(v#1)]
+      Scan model t [k#0:unknown, v#1:unknown]

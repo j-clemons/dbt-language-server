@@ -133,6 +133,79 @@ function M.expand_jinja()
   end)
 end
 
+--- The dbt.queryPlan payload as display lines (exposed for the test suite).
+---@param plan table the server's result
+---@param line_of fun(span: {start: integer}): integer byte span to 1-based line
+---@return string[]
+function M.plan_lines(plan, line_of)
+  local lines = {
+    ("dbt query plan: %s (%s, %s)"):format(tostring(plan.model), plan.status, plan.backend),
+  }
+  if type(plan.guidance) == "string" then
+    vim.list_extend(lines, vim.split(plan.guidance, "\n"))
+  end
+  for _, name in ipairs({ "hir", "mir", "lir" }) do
+    local level = plan.levels[name]
+    table.insert(lines, "")
+    if level.available then
+      table.insert(lines, ("== %s (%s) =="):format(name:upper(), level.fidelity))
+      vim.list_extend(lines, vim.split(level.text or "", "\n"))
+    else
+      table.insert(lines, ("== %s unavailable: %s"):format(name:upper(), level.unavailable or "?"))
+    end
+    for _, gap in ipairs(level.degradations or {}) do
+      table.insert(lines, ("  degraded [%s]: %s"):format(gap.kind, gap.detail))
+    end
+    for _, bug in ipairs(level.violations or {}) do
+      table.insert(lines, ("  VIOLATION [%s]: %s"):format(bug.invariant, bug.detail))
+    end
+  end
+  table.insert(lines, "")
+  table.insert(lines, "== Findings ==")
+  for _, finding in ipairs(plan.findings or {}) do
+    table.insert(
+      lines,
+      ("%d: %s [%s] %s"):format(line_of(finding.span), finding.id, finding.severity, finding.message)
+    )
+  end
+  table.insert(lines, "")
+  table.insert(lines, ("== Rule trace%s =="):format(plan.trace.incomplete and " (incomplete)" or ""))
+  for _, row in ipairs(plan.trace.entries or {}) do
+    local detail = row.reason or (row.count and tostring(row.count)) or ""
+    table.insert(lines, ("%-24s %-13s %-10s %s"):format(row.rule, row.phase, row.outcome, detail))
+  end
+  return lines
+end
+
+--- :DbtPlan — each IR level and the rule trace in a scratch split.
+function M.plan()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local client = client_for(bufnr)
+  if not client then
+    return
+  end
+  client:exec_cmd({
+    command = "dbt.queryPlan",
+    arguments = { { uri = vim.uri_from_bufnr(bufnr) } },
+  }, { bufnr = bufnr }, function(err, plan)
+    if err or type(plan) ~= "table" or type(plan.levels) ~= "table" then
+      vim.notify("dbt.queryPlan failed" .. (err and (": " .. err.message) or ""), vim.log.levels.ERROR)
+      return
+    end
+    local lines = M.plan_lines(plan, function(span)
+      return vim.api.nvim_buf_call(bufnr, function()
+        return vim.fn.byte2line(span.start + 1)
+      end)
+    end)
+    vim.cmd.vsplit()
+    local scratch = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_lines(scratch, 0, -1, false, lines)
+    vim.bo[scratch].filetype = "cogitatorplan"
+    vim.bo[scratch].modifiable = false
+    vim.api.nvim_win_set_buf(0, scratch)
+  end)
+end
+
 --- :DbtDoctor — the server's health report in a float.
 function M.doctor()
   local bufnr = vim.api.nvim_get_current_buf()

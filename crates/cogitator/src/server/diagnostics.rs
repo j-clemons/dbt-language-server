@@ -51,6 +51,22 @@ pub fn static_diagnostics(
     items
 }
 
+/// One open model's plan findings as diagnostics, under the live perf
+/// settings. The caller supplies the plan: a cache probe on the push
+/// path, a computed plan on the pull path.
+pub fn perf_diagnostics(
+    doc: &Document,
+    plan: &crate::server::derived_cache::CachedPlan,
+    settings: &features::plan::diagnostics_config::PerfSettings,
+) -> Vec<Diagnostic> {
+    features::plan::diagnostics::plan_diagnostics(
+        &doc.text,
+        &plan.plan,
+        &plan.suppressions,
+        settings,
+    )
+}
+
 pub(super) fn is_yaml(uri: &str) -> bool {
     uri.ends_with(".yml") || uri.ends_with(".yaml")
 }

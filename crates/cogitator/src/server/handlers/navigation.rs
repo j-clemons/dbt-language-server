@@ -105,7 +105,11 @@ pub fn show_lineage(lineage: Option<&ModelLineage>) -> Reply {
             if lineage.columns.len() > 20 {
                 lines.push(format!("… and {} more columns", lineage.columns.len() - 20));
             }
-            Reply::null().with(info(format!("Column lineage:\n{}", lines.join("\n"))))
+            Reply::null().with(info(format!(
+                "Column lineage{}:\n{}",
+                lineage.origin_note(),
+                lines.join("\n")
+            )))
         }
         _ => Reply::null().with(warning(
             Guidance::new("Could not derive column lineage for this model.")

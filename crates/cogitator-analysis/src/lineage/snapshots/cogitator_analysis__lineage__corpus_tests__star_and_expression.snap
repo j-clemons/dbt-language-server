@@ -1,0 +1,13 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(text, &Dialect::new(*dialect))"
+---
+select *, first_name || ' ' || last_name as full_name
+from {{ ref('stg_customers') }}
+
+---
+* <-
+  model stg_customers.*
+full_name <-
+  model stg_customers.first_name
+  model stg_customers.last_name

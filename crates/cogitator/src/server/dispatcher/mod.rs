@@ -64,6 +64,7 @@ pub struct Dispatcher {
 mod commands_exec;
 mod dbt_ops;
 mod diagnostics_req;
+mod plan;
 mod requests;
 mod sync;
 

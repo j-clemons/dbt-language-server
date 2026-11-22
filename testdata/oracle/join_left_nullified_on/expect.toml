@@ -1,0 +1,22 @@
+rule = "join.left_nullified"
+fix = "move the WHERE predicate to ON"
+safety = "N"
+description = "With the predicate in ON, unmatched orders are kept with NULL customer columns, which the WHERE dropped. Equal only where every order has an active customer."
+
+[[fixtures]]
+name = "inactive_and_missing_customers"
+seed = "seed.sql"
+role = "witness"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "every_order_has_an_active_customer"
+seed = "seed_precondition.sql"
+role = "precondition"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "empty_orders"
+seed = "seed_empty_orders.sql"
+role = "precondition"
+covers = ["empty"]

@@ -1,0 +1,11 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(\"select d.total, d.id from (select id, amount + tax as total from {{ ref('pay') }}) as d\")"
+---
+select d.total, d.id from (select id, amount + tax as total from {{ ref('pay') }}) as d
+---
+total <-
+  model pay.amount
+  model pay.tax
+id <-
+  model pay.id

@@ -86,9 +86,7 @@
      "thread_id": {
       "type": "string"
      },
-     "execution_time": {
-      "type": "number"
-     },
+     "execution_time": {},
      "adapter_response": {
       "type": "object"
      },

@@ -1,0 +1,31 @@
+---
+source: crates/cogitator-sql-front/tests/jinja.rs
+expression: "report(text, &lowered)"
+---
+fidelity Partial
+query [96..104]
+  cte a
+    query [11..19]
+      select distinct=None
+        item x
+        from model m
+  cte b
+    query [48..65]
+      hole ParseError
+  cte c
+    query [74..82]
+      select distinct=None
+        item 1 as y
+        from cte a
+  select distinct=None
+    item y
+    from cte c
+--jinja--
+Ref Blank "{{ ref('m') }}"
+--outputs--
+y
+--resolutions--
+x Some(OpenSchema(#0))
+y Some(Bound { from: #2, col: 0 })
+--degraded--
+ParseHole CTE `b` does not parse: sql parser error: Expected an expression, found: from at Line: 1, Column: 61

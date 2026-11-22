@@ -1,0 +1,14 @@
+---
+source: crates/cogitator-ir/src/print_snapshots.rs
+expression: print_hir(&b.finish(root))
+---
+query [0..0]
+  cte a
+    query [11..24]
+      select distinct=None
+        item 1 as x
+  select distinct=None
+    item x
+    join Left on (x Eq x)
+      from cte a as a
+      from model b

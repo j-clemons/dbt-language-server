@@ -37,9 +37,10 @@ pub fn check(
     vec![Diagnostic::plain(
         Range::default(),
         Guidance::new(format!(
-            "{} produced column(s) missing from the schema YAML: {}",
+            "{} produced column(s) missing from the schema YAML: {}{}",
             missing.len(),
-            missing.join(", ")
+            missing.join(", "),
+            lineage.origin_note()
         ))
         .fix("document them, or inherit the upstream descriptions.")
         .to_diagnostic(),

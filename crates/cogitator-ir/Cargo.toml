@@ -1,0 +1,16 @@
+[package]
+name = "cogitator-ir"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+# builders for hand-constructed plans (lowering, rule and oracle tests)
+testkit = []
+
+[dependencies]
+serde = { workspace = true, features = ["rc"] }
+petgraph = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }

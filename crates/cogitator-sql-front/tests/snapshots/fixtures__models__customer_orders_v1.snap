@@ -1,0 +1,21 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Complete
+query [0..42]
+  select distinct=None
+    item customer_id
+    item count(order_id) as order_count
+    from model stg_orders
+    group_by Exprs([#3])
+--jinja--
+Ref Blank "{{ ref('stg_orders') }}"
+--outputs--
+customer_id
+order_count
+--resolutions--
+customer_id Some(OpenSchema(#0))
+order_id Some(OpenSchema(#0))
+customer_id Some(OpenSchema(#0))
+--degraded--

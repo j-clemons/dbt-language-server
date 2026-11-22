@@ -1,0 +1,17 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"select s.g[1] as a, t.arr[2] as b, t.s.g[3] as c, arr[idx] as d, x[1].y as e \",\n\"from {{ ref('m') }} t\",))"
+---
+select s.g[1] as a, t.arr[2] as b, t.s.g[3] as c, arr[idx] as d, x[1].y as e from {{ ref('m') }} t
+---
+a <-
+  model m.s
+b <-
+  model m.arr
+c <-
+  model m.s
+d <-
+  model m.arr
+  model m.idx
+e <-
+  model m.x

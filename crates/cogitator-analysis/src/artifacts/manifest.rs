@@ -1,12 +1,15 @@
 //! manifest.json, reduced to the two lookups the features need: model
 //! name → node, and test unique_id → the model it attaches to —
 //! deserialized through the generated PROJECTION of the official v12
-//! schema (08 §4); the rest of the 946 KB manifest never materializes.
+//! schema (08 §4); of the 946 KB manifest only those fields materialize.
 
 use std::collections::HashMap;
 use std::path::Path;
 
 use cogitator_error::guidance::Guidance;
+
+pub use super::manifest_config::ManifestConfig;
+
 #[derive(Debug, Default)]
 pub struct ManifestIndex {
     pub models: HashMap<String, ManifestNode>,
@@ -18,6 +21,9 @@ pub struct ManifestIndex {
 pub struct ManifestNode {
     pub unique_id: String,
     pub original_file_path: Option<String>,
+    /// The rendered, quoted relation; `None` for ephemeral models.
+    pub relation_name: Option<String>,
+    pub config: ManifestConfig,
 }
 
 #[derive(Debug)]
@@ -54,6 +60,16 @@ pub fn parse(text: &str, path: &Path) -> Result<ManifestIndex, Guidance> {
                     ManifestNode {
                         unique_id,
                         original_file_path: node.original_file_path,
+                        relation_name: node.relation_name.and_then(|value| match value {
+                            serde_json::Value::String(text) if !text.trim().is_empty() => {
+                                Some(text)
+                            }
+                            _ => None,
+                        }),
+                        config: node
+                            .config
+                            .map(super::manifest_config::parse_config)
+                            .unwrap_or_default(),
                     },
                 );
             }
@@ -98,6 +114,67 @@ mod tests {
                 .as_deref(),
             Some("model.jaffle_shop.customers")
         );
+    }
+
+    #[test]
+    fn relation_name_and_config_are_retained() {
+        let index = parse(
+            r#"{"nodes": {"model.p.m": {"resource_type": "model", "name": "m",
+                "relation_name": "\"db\".\"s\".\"m\"",
+                "config": {"materialized": "incremental", "unique_key": ["a", "b"],
+                           "incremental_strategy": "merge", "cluster_by": "c",
+                           "partition_by": {"field": "ts"},
+                           "indexes": [{"columns": ["a"]}]}}}}"#,
+            Path::new("m"),
+        )
+        .unwrap();
+        let node = &index.models["m"];
+        assert_eq!(node.relation_name.as_deref(), Some("\"db\".\"s\".\"m\""));
+        assert_eq!(node.config.materialized.as_deref(), Some("incremental"));
+        assert_eq!(node.config.unique_key, ["a", "b"]);
+        assert_eq!(node.config.incremental_strategy.as_deref(), Some("merge"));
+        assert_eq!(node.config.cluster_by, ["c"]);
+        assert_eq!(
+            node.config.partition_by,
+            Some(serde_json::json!({"field": "ts"}))
+        );
+        assert!(node.config.indexes.is_some());
+    }
+
+    #[test]
+    fn missing_relation_name_and_config_read_as_absent() {
+        let index = parse(
+            r#"{"nodes": {
+                "model.p.a": {"resource_type": "model", "name": "a"},
+                "model.p.b": {"resource_type": "model", "name": "b",
+                              "relation_name": null, "config": null}
+            }}"#,
+            Path::new("m"),
+        )
+        .unwrap();
+        for model in ["a", "b"] {
+            assert_eq!(index.models[model].relation_name, None);
+            assert_eq!(index.models[model].config, ManifestConfig::default());
+        }
+    }
+
+    #[test]
+    fn malformed_relation_name_and_config_keep_the_manifest() {
+        let index = parse(
+            r#"{"nodes": {
+                "model.p.a": {"resource_type": "model", "name": "a",
+                              "relation_name": 3, "config": "table"},
+                "model.p.b": {"resource_type": "model", "name": "b",
+                              "relation_name": "x", "config": {"materialized": ["t"]}}
+            }}"#,
+            Path::new("m"),
+        )
+        .unwrap();
+        assert_eq!(index.models.len(), 2);
+        assert_eq!(index.models["a"].relation_name, None);
+        assert_eq!(index.models["a"].config, ManifestConfig::default());
+        assert_eq!(index.models["b"].relation_name.as_deref(), Some("x"));
+        assert_eq!(index.models["b"].config.materialized, None);
     }
 
     #[test]

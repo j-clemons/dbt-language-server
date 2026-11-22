@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-rules/src/canon/predicates_tests.rs
+expression: text
+---
+before:
+Filter ((x#2 Gt 1) And (b#1 Gt 2))
+  Project x#2:int64! := a#0, b#1:int64! := b#1
+    Scan model t [a#0:int64!, b#1:int64!]
+after:
+Project x#2:int64! := a#0, b#1:int64! := b#1
+  Filter (a#0 Gt 1) AND (b#1 Gt 2)
+    Scan model t [a#0:int64!, b#1:int64!]

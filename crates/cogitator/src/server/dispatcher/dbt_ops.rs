@@ -13,12 +13,13 @@ impl Dispatcher {
         let snap = self.snapshot_for(uri);
         let derived = self.derived.clone();
         let uri = uri.to_string();
+        let artifact_cap = self.limits.artifact_cap_bytes.load(Ordering::Relaxed);
         self.offload_blocking(id, "dbt.columnLineage", move || {
-            let lineage = crate::server::handlers::commands::lineage_for(
+            let lineage = crate::server::handlers::lineage::typed_lineage_for(
+                &snap,
                 &derived,
-                &snap.ctx,
-                snap.doc.as_deref(),
                 &uri,
+                artifact_cap,
             );
             crate::server::handlers::commands::column_lineage(&lineage)
         });
@@ -34,12 +35,13 @@ impl Dispatcher {
         let snap = self.snapshot_for(uri);
         let derived = self.derived.clone();
         let uri = uri.to_string();
+        let artifact_cap = self.limits.artifact_cap_bytes.load(Ordering::Relaxed);
         self.offload_blocking(id, "dbt.showLineage", move || {
-            let lineage = crate::server::handlers::commands::lineage_for(
+            let lineage = crate::server::handlers::lineage::typed_lineage_for(
+                &snap,
                 &derived,
-                &snap.ctx,
-                snap.doc.as_deref(),
                 &uri,
+                artifact_cap,
             );
             crate::server::handlers::navigation::show_lineage((*lineage).as_ref())
         });
@@ -213,6 +215,7 @@ impl Dispatcher {
                 .expect("config status lock")
                 .clone(),
             self.extra.roots(),
+            crate::server::status::PerfStatus::of(&self.perf_settings()),
         );
         self.send(&ResultResponse::new(id, report));
     }

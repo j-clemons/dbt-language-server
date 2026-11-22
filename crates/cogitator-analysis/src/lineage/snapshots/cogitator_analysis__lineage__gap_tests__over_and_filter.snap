@@ -1,0 +1,20 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"select\\n\",\n\"  sum(amount) over (partition by region order by day) as running,\\n\",\n\"  count(*) filter (where status = 'open') as open_count,\\n\",\n\"  sum(amount) over w as named\\n\", \"from {{ ref('m') }}\\n\",\n\"window w as (partition by team)\",))"
+---
+select
+  sum(amount) over (partition by region order by day) as running,
+  count(*) filter (where status = 'open') as open_count,
+  sum(amount) over w as named
+from {{ ref('m') }}
+window w as (partition by team)
+---
+running <-
+  model m.amount
+  model m.region
+  model m.day
+open_count <-
+  model m.status
+named <-
+  model m.team
+  model m.amount

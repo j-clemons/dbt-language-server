@@ -1,0 +1,7 @@
+---
+source: crates/cogitator-lower/tests/mir_shape.rs
+expression: print_mir(&mir)
+---
+Project a#0:unknown := a#0
+  Filter subquery Exists
+    Scan model o [a#0:unknown]

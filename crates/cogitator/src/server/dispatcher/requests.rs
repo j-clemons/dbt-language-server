@@ -45,6 +45,7 @@ impl Dispatcher {
     }
 
     pub(super) fn hover(&mut self, content: &[u8]) {
+        let derived = self.derived.clone();
         self.respond_position(content, "textDocument/hover", |ctx, doc, uri, pos| {
             HoverResult {
                 // Q8: unknown doc → empty hover
@@ -54,11 +55,45 @@ impl Dispatcher {
                             cogitator_analysis::yaml_cogitator::cogitator_hover(&d.text, pos)
                                 .unwrap_or_default()
                         } else {
-                            features::hover(ctx, d, pos)
+                            // dispatcher path: a cache probe, never a compute
+                            let lineage = derived.lineage_cached(uri, d.generation);
+                            features::hover_with_lineage(
+                                ctx,
+                                d,
+                                pos,
+                                lineage.as_deref().and_then(Option::as_ref),
+                            )
                         }
                     })
                     .unwrap_or_default(),
             }
+        });
+        self.warm_lineage(content);
+    }
+
+    /// Fills the lineage cache after a hover missed it, off the
+    /// dispatcher, so the next hover of this text has the lineage line.
+    fn warm_lineage(&self, content: &[u8]) {
+        let Some((_, uri, _)) = Self::position_request(content) else {
+            return;
+        };
+        if !uri.ends_with(".sql") {
+            return;
+        }
+        let snap = self.snapshot_for(&uri);
+        let Some(generation) = snap.doc.as_deref().map(|doc| doc.generation) else {
+            return;
+        };
+        if self.derived.lineage_cached(&uri, generation).is_some() {
+            return;
+        }
+        let derived = self.derived.clone();
+        let cap = self
+            .limits
+            .artifact_cap_bytes
+            .load(std::sync::atomic::Ordering::Relaxed);
+        tokio::task::spawn_blocking(move || {
+            crate::server::handlers::lineage::typed_lineage_for(&snap, &derived, &uri, cap);
         });
     }
 

@@ -1,0 +1,17 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(&text, &dialect)"
+---
+select
+    customer_id,
+    count(order_id) as order_count
+
+from {{ ref('stg_orders') }}
+
+group by customer_id
+
+---
+customer_id <-
+  model stg_orders.customer_id
+order_count <-
+  model stg_orders.order_id

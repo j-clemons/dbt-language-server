@@ -1,0 +1,12 @@
+[package]
+name = "cogitator-lower"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+cogitator-ir = { workspace = true }
+
+[dev-dependencies]
+cogitator-ir = { workspace = true, features = ["testkit"] }
+insta = { workspace = true }

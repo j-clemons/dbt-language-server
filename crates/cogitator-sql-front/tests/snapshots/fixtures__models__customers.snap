@@ -1,0 +1,110 @@
+---
+source: crates/cogitator-sql-front/tests/fixtures.rs
+expression: "report(&text, &lowered)"
+---
+fidelity Complete
+query [1544..1552]
+  cte customers
+    query [25..33]
+      select distinct=None
+        item * exclude=0
+        from model stg_customers
+  cte orders
+    query [88..96]
+      select distinct=None
+        item * exclude=0
+        from model stg_orders
+  cte payments
+    query [150..158]
+      select distinct=None
+        item * exclude=0
+        from model stg_payments
+  cte status
+    query [212..220]
+      select distinct=None
+        item * exclude=0
+        from model stg_customer_status
+  cte customer_orders
+    query [294..431]
+      select distinct=None
+        item customer_id
+        item min(order_date) as first_order
+        item max(order_date) as most_recent_order
+        item count(order_id) as number_of_orders
+        from cte orders
+        group_by Exprs([#7])
+  cte customer_payments
+    query [528..581]
+      select distinct=None
+        item customer_id
+        item sum(amount) as total_amount
+        join Left on (order_id Eq order_id)
+          from cte payments
+          from cte orders
+        group_by Exprs([#14])
+  cte final
+    query [742..1301]
+      select distinct=None
+        item jinja#4 as jaffle_string
+        item customer_id
+        item first_name
+        item last_name
+        item jinja#5 as full_name
+        item first_order
+        item most_recent_order
+        item number_of_orders
+        item jinja#6 as lifetime_order_number
+        item total_amount as customer_lifetime_value
+        item jinja#7 as lifetime_order_number
+        join Left on (customer_id Eq customer_id)
+          join Left on (customer_id Eq customer_id)
+            from cte customers
+            from cte customer_orders
+          from cte customer_payments
+  select distinct=None
+    item * exclude=0
+    from cte final
+--jinja--
+Ref Blank "{{ ref('stg_customers') }}"
+Ref Blank "{{ ref('stg_orders') }}"
+Ref Blank "{{ ref('stg_payments') }}"
+Ref Blank "{{ ref('stg_customer_status') }}"
+Var Scalar "{{ var('jaffle_string') }}"
+Macro(full_name) Scalar "{{ full_name('first_name', 'last_name') }}"
+Macro(times_five) Scalar "{{ times_five('number_of_orders') }}"
+Macro(jaffle_package.add_values) Scalar "{{ jaffle_package.add_values('number_of_orders', 'lifetime_order_number') }}"
+--outputs--
+jaffle_string
+customer_id
+first_name
+last_name
+full_name
+first_order
+most_recent_order
+number_of_orders
+lifetime_order_number
+customer_lifetime_value
+lifetime_order_number
+--resolutions--
+customer_id Some(OpenSchema(#4))
+order_date Some(OpenSchema(#4))
+order_date Some(OpenSchema(#4))
+order_id Some(OpenSchema(#4))
+customer_id Some(OpenSchema(#4))
+order_id Some(OpenSchema(#5))
+order_id Some(OpenSchema(#6))
+customer_id Some(OpenSchema(#6))
+amount Some(Candidates([#5, #6]))
+customer_id Some(OpenSchema(#6))
+customer_id Some(OpenSchema(#8))
+customer_id Some(Bound { from: #9, col: 0 })
+customer_id Some(OpenSchema(#8))
+customer_id Some(Bound { from: #11, col: 0 })
+customer_id Some(OpenSchema(#8))
+first_name Some(OpenSchema(#8))
+last_name Some(OpenSchema(#8))
+first_order Some(Bound { from: #9, col: 1 })
+most_recent_order Some(Bound { from: #9, col: 2 })
+number_of_orders Some(Bound { from: #9, col: 3 })
+total_amount Some(Bound { from: #11, col: 1 })
+--degraded--

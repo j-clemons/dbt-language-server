@@ -1,0 +1,17 @@
+[package]
+name = "cogitator-oracle-datafusion"
+version = "0.0.0"
+publish = false
+edition = "2021"
+# datafusion 55.2.0's own rust-version
+rust-version = "1.94"
+
+# Its own workspace, excluded from the root one: datafusion 55.2.0 pins
+# arrow 59 and sqlparser 0.62 against the server lockfile's 60 and 0.63
+# (specs/ir-pipeline/07).
+[workspace]
+
+[dependencies]
+cogitator-oracle = { path = "../../crates/cogitator-oracle" }
+datafusion = { version = "=55.2.0", default-features = false, features = ["sql"] }
+tokio = { version = "1", features = ["rt"] }

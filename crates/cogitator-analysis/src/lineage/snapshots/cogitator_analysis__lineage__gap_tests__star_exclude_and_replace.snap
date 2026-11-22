@@ -1,0 +1,15 @@
+---
+source: crates/cogitator-analysis/src/lineage/gap_tests.rs
+expression: "lineage_of(concat!(\"with c as (\\n\",\n\"  select * exclude (secret) replace (upper(name) as name) from {{ ref('m') }}\\n\",\n\")\\n\", \"select name, other, secret from c\",))"
+---
+with c as (
+  select * exclude (secret) replace (upper(name) as name) from {{ ref('m') }}
+)
+select name, other, secret from c
+---
+name <-
+  model m.name
+other <-
+  model m.other
+secret <-
+  unknown c.secret

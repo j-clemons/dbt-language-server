@@ -1,0 +1,22 @@
+rule = "subq.not_in_nullable"
+fix = "rewrite NOT IN as NOT EXISTS"
+safety = "N"
+description = "A NULL in the subquery makes NOT IN never true, so the model returns no rows while NOT EXISTS keeps the unblocked orders. The two forms agree when neither side holds a NULL, and when the subquery is empty."
+
+[[fixtures]]
+name = "null_in_blocked"
+seed = "seed.sql"
+role = "witness"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "no_nulls"
+seed = "seed_no_nulls.sql"
+role = "precondition"
+covers = ["duplicates"]
+
+[[fixtures]]
+name = "empty_blocked"
+seed = "seed_empty.sql"
+role = "precondition"
+covers = ["empty"]

@@ -1,0 +1,8 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(text, &Dialect::new(*dialect))"
+---
+select x.* from {{ ref('a') }} x
+---
+x.* <-
+  model a.*

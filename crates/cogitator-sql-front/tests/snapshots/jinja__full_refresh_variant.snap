@@ -1,0 +1,19 @@
+---
+source: crates/cogitator-sql-front/tests/jinja.rs
+expression: "report(text, &full)"
+---
+fidelity Complete
+query [0..8]
+  select distinct=None
+    item a
+    from model m
+--jinja--
+Ref Blank "{{ ref('m') }}"
+IsIncremental Blank "{% if is_incremental() %}"
+This Blank "{{ this }}"
+IsIncremental Blank "{% endif %}"
+--outputs--
+a
+--resolutions--
+a Some(OpenSchema(#0))
+--degraded--

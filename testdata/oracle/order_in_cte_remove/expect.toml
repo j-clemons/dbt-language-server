@@ -1,0 +1,16 @@
+rule = "order.in_cte"
+fix = "delete the ORDER BY inside the CTE"
+safety = "P"
+description = "A sort with no LIMIT or ordered consumer changes the row order at most, never the bag. The rule labels this P on engines that do not preserve insertion order; on DuckDB it is offered as intent-changing, because order is observable there, which a bag comparison cannot show."
+
+[[fixtures]]
+name = "nulls_and_duplicates"
+seed = "seed.sql"
+role = "preserve"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "empty"
+seed = "seed_empty.sql"
+role = "preserve"
+covers = ["empty"]

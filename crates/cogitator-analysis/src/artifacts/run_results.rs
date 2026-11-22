@@ -23,8 +23,19 @@ pub struct RunResult {
     /// "success" | "error" | "fail" | "skipped" | "pass" | "warn" — or
     /// whatever a future dbt says; consumers match loosely.
     pub status: String,
-    pub execution_time: f64,
+    /// Seconds; `None` when absent, negative or not a number.
+    pub execution_time: Option<f64>,
     pub message: Option<String>,
+}
+
+impl RunResults {
+    /// Seconds the node with this `unique_id` took in the last run.
+    pub fn execution_time(&self, unique_id: &str) -> Option<f64> {
+        self.results
+            .iter()
+            .find(|result| result.unique_id == unique_id)?
+            .execution_time
+    }
 }
 
 pub fn parse(text: &str, path: &Path) -> Result<RunResults, Guidance> {
@@ -61,7 +72,10 @@ pub fn parse(text: &str, path: &Path) -> Result<RunResults, Guidance> {
                 Some(RunResult {
                     unique_id,
                     status: result.status.unwrap_or_default(),
-                    execution_time: result.execution_time.unwrap_or_default(),
+                    execution_time: result
+                        .execution_time
+                        .and_then(|value| value.as_f64())
+                        .filter(|seconds| *seconds >= 0.0),
                     message: result.message,
                 })
             })
@@ -89,8 +103,30 @@ mod tests {
         .unwrap();
         assert_eq!(rr.results.len(), 2);
         assert_eq!(rr.results[0].status, "success");
-        assert_eq!(rr.results[1].execution_time, 0.0);
+        assert_eq!(rr.results[1].execution_time, None);
         assert_eq!(rr.metadata.dbt_version, None);
+    }
+
+    #[test]
+    fn execution_time_is_looked_up_by_unique_id() {
+        let rr = parse(
+            r#"{"results": [
+                {"unique_id": "model.p.ran", "execution_time": 3.25},
+                {"unique_id": "model.p.instant", "execution_time": 0},
+                {"unique_id": "model.p.absent"},
+                {"unique_id": "model.p.null", "execution_time": null},
+                {"unique_id": "model.p.text", "execution_time": "fast"},
+                {"unique_id": "model.p.negative", "execution_time": -1.0}
+            ]}"#,
+            Path::new("x"),
+        )
+        .unwrap();
+        assert_eq!(rr.results.len(), 6, "a malformed time keeps its row");
+        assert_eq!(rr.execution_time("model.p.ran"), Some(3.25));
+        assert_eq!(rr.execution_time("model.p.instant"), Some(0.0));
+        for missing in ["absent", "null", "text", "negative", "never_ran"] {
+            assert_eq!(rr.execution_time(&format!("model.p.{missing}")), None);
+        }
     }
 
     #[test]

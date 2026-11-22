@@ -8,8 +8,10 @@
 //! never break core diagnostics.
 
 pub mod catalog;
+mod catalog_stats;
 pub mod freshness;
 pub mod manifest;
+mod manifest_config;
 pub mod run_results;
 pub mod status;
 

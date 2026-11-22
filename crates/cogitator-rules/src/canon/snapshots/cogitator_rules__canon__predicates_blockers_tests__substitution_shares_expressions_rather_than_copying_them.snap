@@ -1,0 +1,12 @@
+---
+source: crates/cogitator-rules/src/canon/predicates_blockers_tests.rs
+expression: text
+---
+before:
+Filter (x#1 Gt 5)
+  Project x#1:int64! := (a#0 Plus 1)
+    Scan model t [a#0:int64!]
+after:
+Project x#1:int64! := (a#0 Plus 1)
+  Filter ((a#0 Plus 1) Gt 5)
+    Scan model t [a#0:int64!]

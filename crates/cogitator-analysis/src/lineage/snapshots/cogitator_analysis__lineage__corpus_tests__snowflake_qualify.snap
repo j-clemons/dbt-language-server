@@ -1,0 +1,13 @@
+---
+source: crates/cogitator-analysis/src/lineage/corpus_tests.rs
+expression: "answer(text, &Dialect::new(*dialect))"
+---
+select id, amount
+from {{ ref('payments') }}
+qualify row_number() over (partition by id order by amount desc) = 1
+
+---
+id <-
+  model payments.id
+amount <-
+  model payments.amount

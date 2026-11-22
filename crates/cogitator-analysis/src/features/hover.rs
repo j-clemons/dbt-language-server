@@ -4,9 +4,31 @@ use cogitator_lsp::Position;
 use cogitator_parser::TokenKind;
 
 use super::{display_value, DbtContext, Document};
+use crate::lineage::{self, ModelLineage};
 
-/// Hover (03 §9.1). Default: empty contents.
+/// Hover (03 §9.1). Default: empty contents. Computes lineage; a server
+/// handler on the dispatcher path uses [`hover_with_lineage`].
 pub fn hover(ctx: &DbtContext, doc: &Document, pos: Position) -> String {
+    hover_inner(ctx, doc, pos, Lineage::Compute)
+}
+
+/// Hover with the lineage the caller already holds. `None` omits the
+/// lineage line; this never computes one.
+pub fn hover_with_lineage(
+    ctx: &DbtContext,
+    doc: &Document,
+    pos: Position,
+    lineage: Option<&ModelLineage>,
+) -> String {
+    hover_inner(ctx, doc, pos, Lineage::Given(lineage))
+}
+
+enum Lineage<'a> {
+    Compute,
+    Given(Option<&'a ModelLineage>),
+}
+
+fn hover_inner(ctx: &DbtContext, doc: &Document, pos: Position, source: Lineage<'_>) -> String {
     let Some(idx) = doc.parsed.find_token_at_cursor(pos.line, pos.character) else {
         return String::new();
     };
@@ -75,7 +97,15 @@ pub fn hover(ctx: &DbtContext, doc: &Document, pos: Position) -> String {
                     text.push_str("\n\n");
                     text.push_str(&hit.description);
                 }
-                if let Some(lineage) = crate::lineage::column_lineage(&doc.parsed, &ctx.dialect) {
+                let computed;
+                let lineage = match source {
+                    Lineage::Compute => {
+                        computed = lineage::column_lineage(&doc.parsed, &ctx.dialect);
+                        computed.as_ref()
+                    }
+                    Lineage::Given(given) => given,
+                };
+                if let Some(lineage) = lineage {
                     let sources: Vec<String> = lineage
                         .columns
                         .iter()
@@ -101,6 +131,7 @@ pub fn hover(ctx: &DbtContext, doc: &Document, pos: Position) -> String {
                     if !sources.is_empty() {
                         text.push_str("\n\nLineage: ");
                         text.push_str(&sources.join(", "));
+                        text.push_str(lineage.origin_note());
                     }
                 }
                 return text;

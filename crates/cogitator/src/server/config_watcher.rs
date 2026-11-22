@@ -70,6 +70,13 @@ impl ConfigWatcher {
             lint_flags: self.toggles.lints.load(Ordering::Relaxed),
             warehouse_columns: self.toggles.warehouse_columns.load(Ordering::Relaxed),
             client_log_level: crate::client_log::current_level(),
+            perf: self
+                .toggles
+                .perf
+                .read()
+                .expect("perf settings lock")
+                .as_ref()
+                .clone(),
         };
         let mut last = FileConfig::default();
         let mut last_stamp: Option<(PathBuf, derived_cache::FileStamp)> = None;

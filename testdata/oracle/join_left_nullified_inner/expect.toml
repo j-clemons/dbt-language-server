@@ -1,0 +1,30 @@
+rule = "join.left_nullified"
+fix = "LEFT JOIN to INNER JOIN"
+safety = "P"
+description = "c.state = 'active' rejects NULL-extended rows, so the outer join's extra rows never survive the WHERE."
+
+[[fixtures]]
+name = "nulls_and_duplicates"
+seed = "seed.sql"
+role = "preserve"
+covers = ["nulls", "duplicates"]
+
+[[fixtures]]
+name = "empty_customers"
+seed = "seed_empty_customers.sql"
+role = "preserve"
+covers = ["empty"]
+
+[[fixtures]]
+name = "empty_orders"
+seed = "seed_empty_orders.sql"
+role = "preserve"
+covers = ["empty"]
+
+# Hand-written until canon.required_columns can supply them.
+[plan.unused]
+orders = ["status", "note"]
+
+[plan.required]
+orders = ["id", "customer_id"]
+customers = ["id", "state"]

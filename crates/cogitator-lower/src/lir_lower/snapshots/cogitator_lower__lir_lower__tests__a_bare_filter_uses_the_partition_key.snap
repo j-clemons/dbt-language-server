@@ -1,0 +1,7 @@
+---
+source: crates/cogitator-lower/src/lir_lower/tests.rs
+expression: "print_lir(&lir, &mir)"
+---
+backend BigQuery sink View partition=[] cluster=[] contract=false
+Filter (ts#0 Eq 1) est=unknown
+  TableScan model t [ts#0:timestamp?tz, a#1:int64!, b#2:int64!, c#3:int64!] prune=[ts#0:timestamp?tz Partition used (ts#0 Eq 1); a#1:int64! Cluster not-filtered; b#2:int64! Cluster not-filtered] est=stats(1000)
