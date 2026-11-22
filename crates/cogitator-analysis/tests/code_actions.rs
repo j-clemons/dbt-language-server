@@ -167,3 +167,74 @@ fn profiles_yaml_offers_target_switch_actions() {
     assert_eq!(arg["target"], "prod");
     assert_eq!(arg["profile"], "jaffle_shop");
 }
+
+#[test]
+fn a_ref_to_no_model_offers_to_create_it_beside_the_referencing_one() {
+    let ctx = ctx();
+    let uri = model_uri("models/probe.sql");
+    let text = "select * from {{ ref('brand_new_model') }}";
+    let mut docs = Documents::default();
+    docs.open(uri.clone(), text, &ctx.dialect);
+    let range = Range::zero_width(Position {
+        line: 0,
+        character: 25,
+    });
+    let read = |_: &std::path::Path| -> Option<String> { None };
+    let actions =
+        features::define_missing_actions(&ctx, docs.get(&uri).unwrap(), &uri, range, &read);
+    assert_eq!(
+        titles(&actions),
+        vec!["Create model 'brand_new_model'".to_string()]
+    );
+    let wire = serde_json::to_value(actions[0].edit.as_ref().unwrap()).unwrap();
+    assert_eq!(
+        wire["documentChanges"][0]["uri"].as_str(),
+        Some(model_uri("models/brand_new_model.sql").as_str())
+    );
+
+    // a ref to a model that exists offers nothing of the kind
+    let known = "select * from {{ ref('customers') }}";
+    docs.open(uri.clone(), known, &ctx.dialect);
+    let range = Range::zero_width(Position {
+        line: 0,
+        character: 24,
+    });
+    assert!(
+        features::define_missing_actions(&ctx, docs.get(&uri).unwrap(), &uri, range, &read)
+            .is_empty()
+    );
+}
+
+#[test]
+fn an_unknown_var_offers_to_define_it_in_dbt_project_yml() {
+    let ctx = ctx();
+    let uri = model_uri("models/probe.sql");
+    let text = "select {{ var('brand_new_var') }} as v";
+    let mut docs = Documents::default();
+    docs.open(uri.clone(), text, &ctx.dialect);
+    let range = Range::zero_width(Position {
+        line: 0,
+        character: 18,
+    });
+    let read = |path: &std::path::Path| std::fs::read_to_string(path).ok();
+    let actions =
+        features::define_missing_actions(&ctx, docs.get(&uri).unwrap(), &uri, range, &read);
+    assert_eq!(
+        titles(&actions),
+        vec!["Define var 'brand_new_var' in dbt_project.yml".to_string()]
+    );
+    let wire = serde_json::to_value(actions[0].edit.as_ref().unwrap()).unwrap();
+    let change = &wire["documentChanges"][0];
+    assert_eq!(
+        change["textDocument"]["uri"].as_str(),
+        Some(model_uri("dbt_project.yml").as_str())
+    );
+    // at the top level of vars:, after its last line (the fixture's
+    // project-scoped jaffle_shop block)
+    let edit = &change["edits"][0];
+    assert_eq!(edit["newText"], "  brand_new_var: null\n");
+    let project = std::fs::read_to_string(fixture_root().join("dbt_project.yml")).unwrap();
+    let line = edit["range"]["start"]["line"].as_u64().unwrap() as usize;
+    let before: Vec<&str> = project.lines().take(line).collect();
+    assert_eq!(before.last(), Some(&"    jaffle_number: 1"));
+}

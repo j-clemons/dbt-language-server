@@ -5,8 +5,11 @@
 //! make dishonest actions because clients drop executeCommand results.
 
 pub(crate) mod convert_relation;
+pub(crate) mod define_missing;
 mod quickfix;
+pub(crate) mod yaml_columns;
 pub(crate) mod yaml_fixes;
+mod yaml_text;
 
 use cogitator_lsp::{CodeAction, Command, Diagnostic, Range};
 use cogitator_parser::TokenKind;

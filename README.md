@@ -74,6 +74,13 @@ BigQuery), dbt Fusion static analysis, document symbols, and the
   native code-action UI with zero client wiring; on a `ref('x')` an
   "Open schema of 'x'" action, and in schema YAML "Open model" / "Go to
   tests" for the entry under the cursor
+- **Quickfixes** that define or repair what a diagnostic names:
+  did-you-mean rewrites; "Create model 'x'" for a `ref()` to no model
+  (a new `x.sql` beside the referencing one); "Define var 'x' in
+  dbt_project.yml" for an unknown `var()`; "Add N missing column(s)" to
+  the schema YAML for produced but undocumented columns; "Remove the
+  trailing comma" and "Qualify with 'alias'" for the lint findings —
+  preferred, and bundled into `source.fixAll`, where they change no result
 - **Code lenses** per model: `N downstream` / `N upstream`, go to schema,
   column lineage, dbt run/test/compile, `N tests` (documented) or
   `Extract schema YAML` (undocumented); per macro: `N call sites`

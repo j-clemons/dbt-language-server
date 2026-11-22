@@ -35,6 +35,8 @@ mod workspace_diagnostics;
 pub use artifact_status::{artifact_diagnostics, freshness_lenses, run_lens};
 pub use call_hierarchy::{macro_incoming_calls, prepare_macro_hierarchy};
 pub use code_actions::convert_relation::{convert_literal_relations, RelationCatalog};
+pub use code_actions::define_missing::define_missing_actions;
+pub use code_actions::yaml_columns::add_missing_columns_action;
 pub use code_actions::yaml_fixes::{inherit_description_actions, scaffold_tests_action};
 pub use code_actions::{code_actions, model_entry_at, TargetChoice};
 pub use compiled::{compiled_target, CompiledSql};

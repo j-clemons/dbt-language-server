@@ -109,8 +109,13 @@ editor integrations live under `editors/`.
   findings and rule trace for one model; `features/plan/`). Every
   command takes one argument object (`{uri, position?, …}`).
 - `textDocument/codeAction` serves the executable lens set as
-  command-only actions (shared truth: `lenses::model_commands`); the
-  completion capability advertises `triggerCharacters`.
+  command-only actions (shared truth: `lenses::model_commands`), plus
+  edit-bearing quickfixes: from a diagnostic's typed `data`
+  (`FixKind::MultiEdit`, `preserving` = preferred + `source.fixAll`;
+  the lint checks attach theirs there) and from the cursor
+  (`code_actions/define_missing.rs`: create model, define var;
+  `yaml_columns.rs`: add undocumented columns, the shell reading the
+  YAML). The completion capability advertises `triggerCharacters`.
 - `workspace/symbol` understands `tag:x` and `selector:x` query prefixes.
 - `$/progress` reports context refreshes and dbt runs when the client
   advertises window.workDoneProgress.

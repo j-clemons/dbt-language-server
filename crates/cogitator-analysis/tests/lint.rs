@@ -78,6 +78,50 @@ fn unaliased_columns_flag_only_multi_relation_queries() {
         "{}",
         items[0].message
     );
+    // only stg_customers documents customer_id: qualifying by it keeps
+    // the result, so it is the one fix, preferred
+    let fixes = cogitator_analysis::features::code_actions(
+        &ctx,
+        Some(d),
+        uri,
+        items[0].range,
+        None,
+        None,
+        &items,
+    );
+    assert_eq!(fixes[0].title, "Qualify with 'c'");
+    assert_eq!(fixes[0].is_preferred, Some(true));
+    assert_ne!(fixes.get(1).map(|a| a.kind), Some(Some("quickfix")));
+    let wire = serde_json::to_value(fixes[0].edit.as_ref().unwrap()).unwrap();
+    let edit = &wire["documentChanges"][0]["edits"][0];
+    assert_eq!(edit["newText"], "c.");
+    assert_eq!(edit["range"]["start"], edit["range"]["end"]);
+
+    // a column neither documents: every relation is offered, none
+    // preferred, as either could be meant
+    let any_uri = "file:///p/models/join_probe_any.sql";
+    let text = "select first_name, o.order_id from {{ ref('stg_customers') }} c \
+                join {{ ref('stg_orders') }} o on c.customer_id = o.customer_id";
+    let any = doc(&mut docs, &ctx, any_uri, text);
+    let items = lint(&ctx, any, any_uri, opts, None);
+    let actions = cogitator_analysis::features::code_actions(
+        &ctx,
+        Some(any),
+        any_uri,
+        items[0].range,
+        None,
+        None,
+        &items,
+    );
+    let qualify: Vec<(&str, Option<bool>)> = actions
+        .iter()
+        .filter(|a| a.kind == Some("quickfix"))
+        .map(|a| (a.title.as_str(), a.is_preferred))
+        .collect();
+    assert_eq!(
+        qualify,
+        vec![("Qualify with 'c'", None), ("Qualify with 'o'", None)]
+    );
 
     // one relation: bare columns are unambiguous
     let single_uri = "file:///p/models/single_probe.sql";
@@ -112,6 +156,24 @@ fn trailing_comma_is_dialect_gated() {
     let items = lint(&strict, s, uri, opts, None);
     assert_eq!(items.len(), 1, "{items:?}");
     assert_eq!(items[0].code, "lint-trailing-comma");
+    // removing the comma is preferred and joins source.fixAll
+    let only = ["source.fixAll".to_string()];
+    let actions = cogitator_analysis::features::code_actions(
+        &strict,
+        Some(s),
+        uri,
+        items[0].range,
+        Some(&only),
+        None,
+        &items,
+    );
+    let titles: Vec<&str> = actions.iter().map(|a| a.title.as_str()).collect();
+    assert_eq!(titles, vec!["Fix all auto-fixable cogitator problems"]);
+    let wire = serde_json::to_value(actions[0].edit.as_ref().unwrap()).unwrap();
+    let edit = &wire["documentChanges"][0]["edits"][0];
+    assert_eq!(edit["newText"], "");
+    assert_eq!(edit["range"]["start"]["character"], 18);
+    assert_eq!(edit["range"]["end"]["character"], 19);
 }
 
 #[test]
@@ -139,5 +201,42 @@ fn undocumented_columns_hint_from_lineage() {
         !items[0].message.contains("customer_id"),
         "{}",
         items[0].message
+    );
+
+    // the fix: the missing column joins the entry's columns in schema.yml
+    let schema = model.schema_uri.as_deref().expect("schema entry");
+    let yaml = std::fs::read_to_string(schema).unwrap();
+    let action = cogitator_analysis::features::add_missing_columns_action(
+        "customers",
+        model,
+        &lineage,
+        &yaml,
+    )
+    .expect("an action");
+    assert_eq!(
+        action.title,
+        "Add 1 missing column(s) of 'customers' to its schema YAML"
+    );
+    let wire = serde_json::to_value(action.edit.as_ref().unwrap()).unwrap();
+    let change = &wire["documentChanges"][0];
+    assert!(
+        change["textDocument"]["uri"]
+            .as_str()
+            .is_some_and(|u| u.ends_with("models/schema.yml")),
+        "{change}"
+    );
+    let edit = &change["edits"][0];
+    assert_eq!(
+        edit["newText"],
+        "      - name: brand_new_col\n        description: \"\"\n"
+    );
+    // right after the last documented column of customers
+    let line = edit["range"]["start"]["line"].as_u64().unwrap() as usize;
+    let before: Vec<&str> = yaml.lines().take(line).collect();
+    assert!(
+        before
+            .last()
+            .is_some_and(|l| l.contains("Total value (AUD)")),
+        "{before:?}"
     );
 }

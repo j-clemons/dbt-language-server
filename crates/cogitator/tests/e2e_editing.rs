@@ -2,7 +2,7 @@
 //! the framed-LSP harness lives in tests/harness/.
 
 mod harness;
-use harness::jaffle;
+use harness::{jaffle, Lsp};
 
 /// diagnostic carries typed data; echoed back through the codeAction
 /// context it yields an edit-bearing quickfix, and `only: ["quickfix"]`
@@ -389,6 +389,98 @@ fn editing_actions_convert_scaffold_inherit() {
             .as_str()
             .is_some_and(|t| t.contains("description: \"Foreign key")),
         "{inherit}"
+    );
+
+    lsp.shutdown();
+}
+
+/// The definition actions through textDocument/codeAction: create the
+/// model a dangling ref() names, define an unknown var() in
+/// dbt_project.yml, and add the columns a model produces but its
+/// properties YAML does not document.
+#[test]
+fn editing_actions_create_define_document() {
+    let project = jaffle();
+    let root = project.root.clone();
+    let cols_sql = "select customer_id, 1 as extra_col from {{ ref('orders') }}\n";
+    std::fs::write(root.join("models/probe_cols.sql"), cols_sql).unwrap();
+    std::fs::write(
+        root.join("models/probe_cols.yml"),
+        "version: 2\n\nmodels:\n  - name: probe_cols\n    columns:\n      - name: customer_id\n",
+    )
+    .unwrap();
+
+    let (mut lsp, _uri) = project.booted();
+    fn actions_at(lsp: &mut Lsp, uri: &str, character: usize) -> Vec<serde_json::Value> {
+        let reply = lsp.request(
+            "textDocument/codeAction",
+            serde_json::json!({"textDocument": {"uri": uri},
+                               "range": {"start": {"line": 0, "character": character},
+                                         "end": {"line": 0, "character": character}},
+                               "context": {"diagnostics": []}}),
+        );
+        reply["result"].as_array().cloned().expect("actions")
+    }
+    let titled = |list: &[serde_json::Value], title: &str| -> serde_json::Value {
+        list.iter()
+            .find(|a| a["title"] == title)
+            .cloned()
+            .unwrap_or_else(|| panic!("no '{title}' in {list:?}"))
+    };
+
+    // 1+2. a dangling ref() and an unknown var()
+    let dangling = "select * from {{ ref('not_yet_written') }} where id = {{ var('fresh_var') }}\n";
+    let dangling_uri = cogitator_lsp::fs_path_to_uri(&root.join("models/dangling_probe.sql"));
+    lsp.notify(
+        "textDocument/didOpen",
+        serde_json::json!({"textDocument": {"uri": dangling_uri, "languageId": "sql", "version": 1,
+            "text": dangling}}),
+    );
+    let at_ref = dangling.find("not_yet").unwrap() + 2;
+    let create = titled(
+        &actions_at(&mut lsp, &dangling_uri, at_ref),
+        "Create model 'not_yet_written'",
+    );
+    assert_eq!(create["kind"], "quickfix");
+    assert_eq!(
+        create["edit"]["documentChanges"][0]["kind"], "create",
+        "{create}"
+    );
+    assert_eq!(
+        create["edit"]["documentChanges"][0]["uri"].as_str(),
+        Some(cogitator_lsp::fs_path_to_uri(&root.join("models/not_yet_written.sql")).as_str())
+    );
+    let at_var = dangling.find("fresh_var").unwrap() + 2;
+    let define = titled(
+        &actions_at(&mut lsp, &dangling_uri, at_var),
+        "Define var 'fresh_var' in dbt_project.yml",
+    );
+    assert_eq!(
+        define["edit"]["documentChanges"][0]["edits"][0]["newText"], "  fresh_var: null\n",
+        "{define}"
+    );
+
+    // 3. the produced column the YAML lacks
+    let cols_uri = cogitator_lsp::fs_path_to_uri(&root.join("models/probe_cols.sql"));
+    lsp.notify(
+        "textDocument/didOpen",
+        serde_json::json!({"textDocument": {"uri": cols_uri, "languageId": "sql", "version": 1,
+            "text": cols_sql}}),
+    );
+    let add = titled(
+        &actions_at(&mut lsp, &cols_uri, 0),
+        "Add 1 missing column(s) of 'probe_cols' to its schema YAML",
+    );
+    let change = &add["edit"]["documentChanges"][0];
+    assert!(
+        change["textDocument"]["uri"]
+            .as_str()
+            .is_some_and(|u| u.ends_with("models/probe_cols.yml")),
+        "{add}"
+    );
+    assert_eq!(
+        change["edits"][0]["newText"],
+        "      - name: extra_col\n        description: \"\"\n"
     );
 
     lsp.shutdown();

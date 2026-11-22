@@ -1,8 +1,11 @@
 //! A trailing comma before FROM fails outright on dialects that reject
 //! it; the ones that accept it (duckdb, snowflake, bigquery) stay quiet.
+//! Removing the comma is the whole fix, and it changes no result.
 
 use cogitator_error::guidance::Guidance;
-use cogitator_lsp::{diagnostic_severity, Diagnostic};
+use cogitator_lsp::{
+    diagnostic_severity, Diagnostic, DiagnosticData, FixKind, MultiEditFix, TextEdit,
+};
 use cogitator_parser::{Keyword, TokenKind};
 
 use super::super::{token_range, DbtContext, Document};
@@ -25,8 +28,9 @@ pub fn check(ctx: &DbtContext, doc: &Document) -> Vec<Diagnostic> {
         } else {
             ctx.dialect.as_str()
         };
-        out.push(Diagnostic::plain(
-            token_range(comma),
+        let range = token_range(comma);
+        let mut diagnostic = Diagnostic::plain(
+            range,
             Guidance::new("trailing comma before FROM".to_string())
                 .because(format!("the {dialect} dialect rejects it."))
                 .fix("drop the comma.")
@@ -34,7 +38,22 @@ pub fn check(ctx: &DbtContext, doc: &Document) -> Vec<Diagnostic> {
             diagnostic_severity::WARNING,
             "lint-trailing-comma",
             "cogitator",
-        ));
+        );
+        diagnostic.data = Some(DiagnosticData {
+            fix: FixKind::MultiEdit {
+                fixes: vec![MultiEditFix {
+                    title: "Remove the trailing comma".to_string(),
+                    edits: vec![TextEdit {
+                        range,
+                        new_text: String::new(),
+                    }],
+                    preserving: true,
+                }],
+            },
+            token_range: range,
+            suggestions: Vec::new(),
+        });
+        out.push(diagnostic);
     }
     out
 }

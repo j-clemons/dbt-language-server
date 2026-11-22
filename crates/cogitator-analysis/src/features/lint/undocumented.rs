@@ -6,6 +6,7 @@ use cogitator_error::guidance::Guidance;
 use cogitator_lsp::{diagnostic_severity, Diagnostic, Range};
 
 use super::super::{model_name_from_uri, DbtContext, Document};
+use crate::context::ModelDetails;
 use crate::lineage::ModelLineage;
 
 pub fn check(
@@ -23,14 +24,7 @@ pub fn check(
     if details.schema_uri.is_none() {
         return Vec::new(); // no YAML entry at all: extract scaffold territory
     }
-    let documented: Vec<&str> = details.columns.iter().map(|c| c.name.as_str()).collect();
-    let missing: Vec<&str> = lineage
-        .columns
-        .iter()
-        .map(|c| c.name.as_str())
-        .filter(|name| !name.contains('*'))
-        .filter(|name| !documented.iter().any(|d| d.eq_ignore_ascii_case(name)))
-        .collect();
+    let missing = missing_columns(details, lineage);
     if missing.is_empty() {
         return Vec::new();
     }
@@ -48,4 +42,25 @@ pub fn check(
         "lint-undocumented-column",
         "cogitator",
     )]
+}
+
+/// The produced columns (per lineage, in output order) the YAML entry
+/// does not document; a `*` production is no column. Shared with the
+/// "Add missing columns" action, so the hint and its fix agree.
+pub(crate) fn missing_columns<'a>(
+    details: &ModelDetails,
+    lineage: &'a ModelLineage,
+) -> Vec<&'a str> {
+    lineage
+        .columns
+        .iter()
+        .map(|c| c.name.as_str())
+        .filter(|name| !name.contains('*'))
+        .filter(|name| {
+            !details
+                .columns
+                .iter()
+                .any(|d| d.name.eq_ignore_ascii_case(name))
+        })
+        .collect()
 }

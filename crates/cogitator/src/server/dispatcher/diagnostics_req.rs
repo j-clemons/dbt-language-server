@@ -10,6 +10,24 @@ use cogitator_lsp::{Envelope, FullDocumentDiagnosticReport};
 
 use super::Dispatcher;
 
+/// The undocumented columns of the model being edited, as an edit of
+/// its properties YAML: lineage is the typed one the undocumented-columns
+/// lint reads, so the hint and its fix name the same columns. Only for a
+/// model that has an entry to add to.
+fn missing_columns_action(
+    snap: &crate::server::snapshot::Snapshot,
+    derived: &crate::server::derived_cache::DerivedCache,
+    uri: &str,
+    artifact_cap: u64,
+) -> Option<cogitator_lsp::CodeAction> {
+    let model = features::model_name_from_uri(uri)?;
+    let details = snap.ctx.model_detail_map.get(&model)?;
+    let yaml = std::fs::read_to_string(details.schema_uri.as_deref()?).ok()?;
+    let lineage =
+        crate::server::handlers::lineage::typed_lineage_for(snap, derived, uri, artifact_cap);
+    features::add_missing_columns_action(&model, details, (*lineage).as_ref()?, &yaml)
+}
+
 impl Dispatcher {
     pub(super) fn code_action(&mut self, content: &[u8]) {
         let Ok(req) = serde_json::from_slice::<Envelope<cogitator_lsp::CodeActionParams>>(content)
@@ -30,6 +48,7 @@ impl Dispatcher {
         let range = params.range;
         let snap = self.snapshot_for(&uri);
         let derived = self.derived.clone();
+        let artifact_cap = self.limits.artifact_cap_bytes.load(Ordering::Relaxed);
         // offloaded since the editing-actions batch: target choices,
         // the relation catalog and lineage all touch the filesystem
         self.offload_blocking(req.id, "textDocument/codeAction", move || {
@@ -69,6 +88,11 @@ impl Dispatcher {
                         crate::server::handlers::profiles::active_target_relation(&snap, &derived);
                     let catalog = features::RelationCatalog::build(&snap.ctx, target.as_ref());
                     extra.extend(features::convert_literal_relations(doc, &uri, &catalog));
+                    let read = |path: &std::path::Path| std::fs::read_to_string(path).ok();
+                    extra.extend(features::define_missing_actions(
+                        &snap.ctx, doc, &uri, range, &read,
+                    ));
+                    extra.extend(missing_columns_action(&snap, &derived, &uri, artifact_cap));
                 }
             }
             extra.retain(|action| action.allowed_by(only.as_deref()));

@@ -5,7 +5,7 @@
 mod select_star;
 mod trailing_comma;
 mod unaliased;
-mod undocumented;
+pub(crate) mod undocumented;
 
 use cogitator_lsp::Diagnostic;
 
@@ -58,7 +58,7 @@ pub fn lint(
         out.extend(select_star::check(ctx, doc, uri));
     }
     if opts.unaliased_columns {
-        out.extend(unaliased::check(doc));
+        out.extend(unaliased::check(ctx, doc));
     }
     if opts.trailing_comma {
         out.extend(trailing_comma::check(ctx, doc));
