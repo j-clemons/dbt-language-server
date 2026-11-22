@@ -1,10 +1,11 @@
-//! Where the Jinja constructs are, according to the jinja2 CST (06 §3.3).
+//! Where the Jinja constructs are, according to the tree-sitter-dbt CST
+//! (06 §3.3).
 //!
-//! The grammar can't end a comment at an even run of `#` (`##}`) and has no
-//! `{% raw %}`. Text using either is parsed from a same-length copy with
-//! those constructs blanked, and their spans are added back as regions.
-
-use cogitator_parser::jinja_spans::{jinja_spans, JinjaSpan, JinjaSpanKind};
+//! The grammar nests blocks (`if_statement` holds its body), but this
+//! crate wants a flat list: one region per tag or `{{ … }}`, the text
+//! between them SQL. So the walk goes into every block and takes each
+//! run of tag tokens, `{%` up to `%}`, as one region; `content` stays a
+//! gap.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RegionKind {
@@ -20,141 +21,20 @@ pub(crate) struct Region {
     pub(crate) end: usize,
 }
 
-/// What tree-sitter should parse for a given text.
-pub(crate) struct Prepared {
-    /// `None`: parse the document text as it is.
-    pub(crate) normalised: Option<String>,
-    /// Regions the grammar can't see in the normalised text.
-    pub(crate) injected: Vec<Region>,
-}
+const TAG_OPEN: [&str; 3] = ["{%", "{%-", "{%+"];
+const TAG_CLOSE: [&str; 3] = ["%}", "-%}", "+%}"];
 
-const RAW_BODY_DELIMITERS: [&str; 6] = ["{{", "}}", "{%", "%}", "{#", "#}"];
+/// Children that are text, not Jinja: SQL, a docs block's Markdown and the
+/// body of `{% raw %}` all go to the SQL side, as they did before.
+const TEXT: [&str; 3] = ["content", "markdown_content", "raw_content"];
 
-pub(crate) fn prepare(text: &str) -> Prepared {
-    let spans = jinja_spans(text);
-    let confuses_grammar = spans.iter().any(|s| match s.kind {
-        JinjaSpanKind::RawTag => true,
-        JinjaSpanKind::Comment => text[s.range.clone()].ends_with("##}"),
-        _ => false,
-    });
-    if !confuses_grammar {
-        return Prepared {
-            normalised: None,
-            injected: Vec::new(),
-        };
-    }
-
-    let mut bytes = text.as_bytes().to_vec();
-    let mut injected = Vec::new();
-    for span in &spans {
-        match span.kind {
-            JinjaSpanKind::Comment | JinjaSpanKind::RawTag => {
-                blank(&mut bytes[span.range.clone()]);
-                injected.push(Region {
-                    kind: RegionKind::Comment,
-                    start: span.range.start,
-                    end: span.range.end,
-                });
-            }
-            JinjaSpanKind::RawBody => {
-                let body = &text[span.range.clone()];
-                for delimiter in RAW_BODY_DELIMITERS {
-                    for (at, _) in body.match_indices(delimiter) {
-                        let at = span.range.start + at;
-                        blank(&mut bytes[at..at + delimiter.len()]);
-                    }
-                }
-            }
-            JinjaSpanKind::Code => {}
-        }
-    }
-    Prepared {
-        // Only ASCII delimiters and whole spans of chars were overwritten.
-        normalised: String::from_utf8(bytes).ok(),
-        injected,
-    }
-}
-
-fn blank(bytes: &mut [u8]) {
-    for b in bytes {
-        if *b != b'\n' && *b != b'\r' {
-            *b = b' ';
-        }
-    }
-}
-
-/// Top-level walk of the jinja2 CST: group `{{ … }}` token runs, take
-/// `jinja_expression` ({% … %}) and comment spans, and surface ERROR spans.
+/// Every Jinja region of the document, sorted and non-overlapping.
 /// Everything between regions is SQL text.
-pub(crate) fn collect_regions(
-    root: tree_sitter::Node<'_>,
-    text: &str,
-    injected: &[Region],
-) -> Vec<Region> {
-    let mut regions = injected.to_vec();
-    let comments: Vec<JinjaSpan> = jinja_spans(text)
-        .into_iter()
-        .filter(|s| s.kind == JinjaSpanKind::Comment)
-        .collect();
-    let count = root.child_count();
-    let mut i = 0;
-    while i < count {
-        let Some(node) = root.child(i) else { break };
-        match node.kind() {
-            "{{" => {
-                // run to the matching `}}` sibling (or as far as the children go)
-                let start = node.start_byte();
-                let mut end = node.end_byte();
-                let mut j = i + 1;
-                while let Some(sibling) = root.child(j) {
-                    end = sibling.end_byte();
-                    if sibling.kind() == "}}" {
-                        break;
-                    }
-                    j += 1;
-                }
-                regions.push(Region {
-                    kind: RegionKind::Jinja,
-                    start,
-                    end,
-                });
-                i = j;
-            }
-            "jinja_expression" => {
-                regions.push(Region {
-                    kind: RegionKind::Jinja,
-                    start: node.start_byte(),
-                    end: node.end_byte(),
-                });
-            }
-            "{#" => {
-                // The grammar marks the comment-body token HIDDEN, so the
-                // sibling walk can land on a later construct and swallow
-                // it (a well-formed comment then ate the rest of the
-                // document). Take the real extent from the shared spans.
-                let start = node.start_byte();
-                let end = comments
-                    .binary_search_by_key(&start, |s| s.range.start)
-                    .map_or(node.end_byte(), |at| comments[at].range.end);
-                regions.push(Region {
-                    kind: RegionKind::Comment,
-                    start,
-                    end,
-                });
-            }
-            "ERROR" => {
-                regions.push(Region {
-                    kind: RegionKind::Error,
-                    start: node.start_byte(),
-                    end: node.end_byte(),
-                });
-            }
-            _ => {} // anonymous text tokens → SQL gap
-        }
-        i += 1;
-    }
-    // defensive: sorted, non-overlapping
+pub(crate) fn collect_regions(root: tree_sitter::Node<'_>) -> Vec<Region> {
+    let mut regions = Vec::new();
+    walk(root, false, &mut regions);
     regions.sort_by_key(|r| r.start);
+    // defensive: a recovered tree may overlap
     regions.dedup_by(|b, a| {
         if b.start < a.end {
             a.end = a.end.max(b.end);
@@ -164,4 +44,79 @@ pub(crate) fn collect_regions(
         }
     });
     regions
+}
+
+/// Walks the children of `node`. Inside `raw_block` the tags are
+/// comment regions: minijinja cannot tokenize `{% raw %}` alone, and the
+/// tags carry nothing to complete or hover.
+fn walk(node: tree_sitter::Node<'_>, in_raw: bool, regions: &mut Vec<Region>) {
+    let tag_kind = if in_raw {
+        RegionKind::Comment
+    } else {
+        RegionKind::Jinja
+    };
+    // the tag being read: its start, where its last token ended, and
+    // whether an ERROR is inside it
+    let mut tag: Option<Tag> = None;
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        let kind = child.kind();
+        if TAG_OPEN.contains(&kind) {
+            close(&mut tag, tag_kind, regions);
+            tag = Some(Tag {
+                start: child.start_byte(),
+                end: child.end_byte(),
+                broken: false,
+            });
+            continue;
+        }
+        if let Some(open) = tag.as_mut() {
+            // anything between `{%` and `%}` is part of the tag
+            open.end = child.end_byte();
+            open.broken |= child.is_error() || child.is_missing();
+            if TAG_CLOSE.contains(&kind) {
+                close(&mut tag, tag_kind, regions);
+            }
+            continue;
+        }
+        if child.is_error() {
+            regions.push(region(RegionKind::Error, child));
+            continue;
+        }
+        match kind {
+            "output" => regions.push(region(RegionKind::Jinja, child)),
+            "comment" => regions.push(region(RegionKind::Comment, child)),
+            _ if TEXT.contains(&kind) => {}
+            "raw_block" => walk(child, true, regions),
+            // a statement, or an elif/else clause: its tags and its body
+            _ if child.is_named() => walk(child, in_raw, regions),
+            // stray tokens of a recovered tree
+            _ => {}
+        }
+    }
+    // a tag the tree never closed (a MISSING `%}`) runs to its last token
+    close(&mut tag, tag_kind, regions);
+}
+
+struct Tag {
+    start: usize,
+    end: usize,
+    broken: bool,
+}
+
+/// A tag with an ERROR in it is one Error region, so the caller decides
+/// about it whole rather than about two halves.
+fn close(tag: &mut Option<Tag>, kind: RegionKind, regions: &mut Vec<Region>) {
+    if let Some(Tag { start, end, broken }) = tag.take() {
+        let kind = if broken { RegionKind::Error } else { kind };
+        regions.push(Region { kind, start, end });
+    }
+}
+
+fn region(kind: RegionKind, node: tree_sitter::Node<'_>) -> Region {
+    Region {
+        kind,
+        start: node.start_byte(),
+        end: node.end_byte(),
+    }
 }

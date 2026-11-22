@@ -1,6 +1,7 @@
 //! Tree-sitter document backend (specs/rust-port/06 §3): error-tolerant
-//! segmentation of dbt SQL-with-Jinja via the vendored dbt-labs
-//! tree-sitter-jinja2 grammar, behind the `DocumentParser` seam.
+//! segmentation of dbt SQL-with-Jinja via the tree-sitter-dbt grammar
+//! (https://github.com/sirh3e/tree-sitter-dbt), behind the
+//! `DocumentParser` seam.
 //!
 //! Division of labor: the tree decides *where* the Jinja constructs are —
 //! and keeps deciding it on broken mid-edit buffers (ERROR nodes degrade one
@@ -9,7 +10,6 @@
 //! refinement, CTE tracking and the token model stay byte-for-byte identical
 //! to the phase-1 pipeline. SQL stays on sqlparser per 06 §3.3.
 
-mod ffi;
 mod regions;
 mod sql_structure;
 
@@ -21,7 +21,7 @@ use cogitator_dialects::Dialect;
 use cogitator_error::Result;
 use cogitator_parser::{backend, AppliedEdit, DocumentParser, LineTable, ParsedDocument, Token};
 
-use regions::{collect_regions, prepare, Prepared, Region, RegionKind};
+use regions::{collect_regions, Region, RegionKind};
 
 /// Below this size a full reparse is µs-scale anyway; the incremental
 /// path (06 §3.4) only engages past it — risk stays bounded.
@@ -44,7 +44,7 @@ impl TreeSitterParser {
     pub fn new() -> Result<Self> {
         let mut parser = tree_sitter::Parser::new();
         parser
-            .set_language(&ffi::language())
+            .set_language(&tree_sitter_dbt::LANGUAGE.into())
             .map_err(|e| cogitator_error::Error::Jinja {
                 path: Default::default(),
                 message: format!("tree-sitter language load failed: {e}"),
@@ -64,10 +64,9 @@ impl TreeSitterParser {
         &self,
         tree: &tree_sitter::Tree,
         text: &str,
-        injected: &[Region],
         dialect: &Dialect,
     ) -> ParsedDocument {
-        let regions = collect_regions(tree.root_node(), text, injected);
+        let regions = collect_regions(tree.root_node());
         let mut doc = parse_regions(&regions, text, dialect);
         doc.sql_structure = sql_structure::collect(&self.sql_parser, text, &regions);
         doc
@@ -75,20 +74,17 @@ impl TreeSitterParser {
 
     fn parse_tree(
         &self,
-        prepared: &Prepared,
         text: &str,
         old_tree: Option<&tree_sitter::Tree>,
     ) -> Option<tree_sitter::Tree> {
-        let input = prepared.normalised.as_deref().unwrap_or(text);
-        self.parser.lock().ok()?.parse(input, old_tree)
+        self.parser.lock().ok()?.parse(text, old_tree)
     }
 }
 
 impl DocumentParser for TreeSitterParser {
     fn parse(&self, text: &str, dialect: &Dialect) -> Result<ParsedDocument> {
-        let prepared = prepare(text);
-        match self.parse_tree(&prepared, text, None) {
-            Some(tree) => Ok(self.document_from(&tree, text, &prepared.injected, dialect)),
+        match self.parse_tree(text, None) {
+            Some(tree) => Ok(self.document_from(&tree, text, dialect)),
             // parse() returns None only on cancellation/timeout; fall back to
             // the phase-1 pipeline rather than dropping the request.
             None => backend_parse(text, dialect),
@@ -105,16 +101,7 @@ impl DocumentParser for TreeSitterParser {
         dialect: &Dialect,
         edits: &[AppliedEdit],
     ) -> Result<ParsedDocument> {
-        let prepared = prepare(text);
-        if prepared.normalised.is_some() {
-            // Blanking can change bytes outside the edit, so neither the
-            // stored tree nor this one can be edited forward later.
-            self.forget(uri);
-        }
-        let old_tree = if prepared.normalised.is_none()
-            && !edits.is_empty()
-            && text.len() > INCREMENTAL_MIN_BYTES
-        {
+        let old_tree = if !edits.is_empty() && text.len() > INCREMENTAL_MIN_BYTES {
             self.trees
                 .lock()
                 .ok()
@@ -128,13 +115,11 @@ impl DocumentParser for TreeSitterParser {
         } else {
             None
         };
-        match self.parse_tree(&prepared, text, old_tree.as_ref()) {
+        match self.parse_tree(text, old_tree.as_ref()) {
             Some(tree) => {
-                let doc = self.document_from(&tree, text, &prepared.injected, dialect);
-                if prepared.normalised.is_none() {
-                    if let Ok(mut trees) = self.trees.lock() {
-                        trees.insert(uri.to_string(), tree);
-                    }
+                let doc = self.document_from(&tree, text, dialect);
+                if let Ok(mut trees) = self.trees.lock() {
+                    trees.insert(uri.to_string(), tree);
                 }
                 Ok(doc)
             }

@@ -161,6 +161,21 @@ let language = unsafe { tree_sitter::Language::from_raw(tree_sitter_jinja2() as 
   the vendoring/build path is identical.
 - Vendored grammar versions are pinned by commit in `third_party/README`.
 
+**Amendment (tree-sitter-dbt):** the dbt-specific grammar this section left
+open now exists, written for this project and moved to its own repository,
+[sirh3e/tree-sitter-dbt](https://github.com/sirh3e/tree-sitter-dbt), so other
+tools can use it without this server. It replaces the vendored
+tree-sitter-jinja2: full Jinja (every statement, filters, tests, dotted calls,
+whitespace control, `raw`) and dbt's `materialization`, `test`, `snapshot` and
+`docs` blocks, with the SQL between tags as `content` nodes. It comes in as a
+git dependency pinned by `rev`, built by its own `build.rs` with `cc`, so
+`third_party/`, `ffi.rs` and the crate's `build.rs` are gone and the project
+has no `unsafe` left for grammars. The workarounds for the old grammar's gaps
+(blanking `##}` comments and `{% raw %}` bodies before parsing) went with it,
+so every document now keeps its tree for the incremental path. The capture
+table below names the old grammar's nodes; `regions.rs` walks the new tree
+(each tag's `{%`…`%}` run and each `output` is a region, `content` is SQL).
+
 ### 3.3 Mapping trees onto the existing token model
 
 `.scm` query files (compiled once with `tree_sitter::Query`, cached) capture the
@@ -238,8 +253,7 @@ minijinja = { version = "3", features = ["unstable_machinery"] }
 src/analysis/parser/jinja_scan.rs   # §2: minijinja-based macro/docs extraction (scan side)
 src/analysis/parser/mod.rs          # §3.5: DocumentParser trait + ParsedDocument
 src/analysis/parser/ts/             # phase 2: ffi.rs, parser.rs, queries/*.scm
-third_party/                        # phase 2: vendored grammar C sources, pinned
-build.rs                            # phase 2: cc compilation of grammar sources
+# (third_party/ and build.rs: gone, the grammar is the tree-sitter-dbt crate — §3.2 amendment)
 ```
 
 ## Addendum: §3.4 incremental reparse (resolved)

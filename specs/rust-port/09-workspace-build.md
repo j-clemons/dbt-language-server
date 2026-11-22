@@ -18,7 +18,6 @@ dbt-language-server/
 ├── Cargo.toml                 # [workspace]: members, workspace.{package,dependencies,lints}, profiles
 ├── .cargo/config.toml         # mold linker config (Linux targets), §3
 ├── schemas/dbt/               # vendored dbt-jsonschema (08 §2.1)
-├── third_party/               # phase 2: vendored tree-sitter grammars (06 §3.2)
 ├── testdata/                  # shared fixtures (Go repo copy)
 └── crates/
     │   (naming — owner's choice: the binary carries the Warhammer 40k brand

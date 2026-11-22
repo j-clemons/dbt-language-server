@@ -9,12 +9,9 @@ cogitator-error = { workspace = true }
 cogitator-dialects = { workspace = true }
 cogitator-parser = { workspace = true }
 tree-sitter = { workspace = true }
-tree-sitter-language = { workspace = true }
 tracing = { workspace = true }
 tree-sitter-sequel = "0.3"
-
-[build-dependencies]
-cc = { workspace = true }
+tree-sitter-dbt = { workspace = true }
 
 [dev-dependencies]
 cogitator-lsp = { workspace = true }

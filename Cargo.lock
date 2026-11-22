@@ -708,7 +708,6 @@ dependencies = [
 name = "cogitator-treesitter"
 version = "0.5.0"
 dependencies = [
- "cc",
  "cogitator-dialects",
  "cogitator-error",
  "cogitator-lsp",
@@ -717,7 +716,7 @@ dependencies = [
  "rstest",
  "tracing",
  "tree-sitter",
- "tree-sitter-language",
+ "tree-sitter-dbt",
  "tree-sitter-sequel",
 ]
 
@@ -3122,6 +3121,15 @@ dependencies = [
  "regex",
  "serde_json",
  "streaming-iterator",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-dbt"
+version = "0.1.0"
+source = "git+https://github.com/sirh3e/tree-sitter-dbt?rev=ca6ce2d5dec7a8958f2a160637bd2bafa1fcfb98#ca6ce2d5dec7a8958f2a160637bd2bafa1fcfb98"
+dependencies = [
+ "cc",
  "tree-sitter-language",
 ]
 

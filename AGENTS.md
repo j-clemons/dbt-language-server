@@ -146,7 +146,7 @@ editor integrations live under `editors/`.
 - `crates/cogitator-parser` — minijinja+sqlparser pipeline, refinement, TokenIndex, jinja_scan
 - `crates/cogitator-analysis` — context builders, feature functions, petgraph project graph, profiles auth manager, lineage
 - `crates/cogitator-duckdb` — Jinja masking + feature-gated DuckDB 2.0 parse diagnostics
-- `crates/cogitator-treesitter` — tree-sitter document backend (vendored grammar in `third_party/`)
+- `crates/cogitator-treesitter` — tree-sitter document backend (grammar: the `tree-sitter-dbt` git dependency, its own repository sirh3e/tree-sitter-dbt; change the grammar there and bump the pinned `rev`)
 - `crates/cogitator-ir` — IR arenas, HIR/MIR/LIR types, verifiers, printers, `testkit` feature (serde and petgraph only)
 - `crates/cogitator-sql-front` — HIR construction: masking, binder (the only IR crate seeing sqlparser/`minijinja::machinery`)
 - `crates/cogitator-lower` — HIR→MIR, MIR→LIR, dialect backends

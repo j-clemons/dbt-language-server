@@ -107,14 +107,14 @@ names what already exists in the codebase.
 ## P3 — planned phases (already specced)
 
 - [x] **Tree-sitter backend shipped** (`crates/cogitator-treesitter`, 06 §3): the
-      vendored dbt-labs jinja2 grammar segments documents error-tolerantly —
+      tree-sitter-dbt grammar (sirh3e/tree-sitter-dbt, once a vendored dbt-labs
+      jinja2 grammar) segments documents error-tolerantly —
       broken constructs degrade locally instead of staling the whole document
       — and is the default `DocumentParser` (fallback: `--no-tree-sitter`).
       06 §3.4 incremental `tree.edit()` reparse: DONE for documents past a
-      32 KiB gate (equivalence-tested against full reparse). The grammar's deliberate
-      incompleteness (dbt-extractor subset) is documented in
-      third_party/tree-sitter-jinja2/README — no regen script exists;
-      regenerating parser.c needs the tree-sitter CLI (ABI 14).
+      32 KiB gate (equivalence-tested against full reparse). The grammar is
+      full Jinja with dbt's blocks and lives in its own repository, pinned by
+      `rev` in the workspace Cargo.toml.
 - [x] **Tree-sitter batch — token-based v1 shipped** (06 §3.6, the tree can
       later upgrade fidelity: richer folding/symbols from real nodes):
       - [x] `textDocument/semanticTokens` (full)

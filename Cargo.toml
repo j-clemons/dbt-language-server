@@ -47,8 +47,8 @@ tokio = { version = "1", features = [
 walkdir = "2"
 toml = "1"
 tree-sitter = "0.27"           # C runtime bindings (06 §3.2)
-tree-sitter-language = "0.1"
-cc = "1"
+# Jinja over SQL; its own repository so others can use it without this server
+tree-sitter-dbt = { git = "https://github.com/sirh3e/tree-sitter-dbt", rev = "ca6ce2d5dec7a8958f2a160637bd2bafa1fcfb98" }
 
 # observability (05 §6.3)
 tracing = "0.1"

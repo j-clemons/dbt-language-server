@@ -157,7 +157,7 @@ BigQuery), dbt Fusion static analysis, document symbols, and the
 
 - Parsing by **minijinja** (Jinja layer) + **sqlparser** (SQL layer) — no
   hand-written lexer; zero-copy tokens over the document text
-- **tree-sitter** backend (vendored `tree-sitter-jinja2`) for
+- **tree-sitter** backend ([`tree-sitter-dbt`](https://github.com/sirh3e/tree-sitter-dbt)) for
   error-tolerant segmentation of broken buffers (`--no-tree-sitter` falls
   back to the plain pipeline)
 - Optional **DuckDB 2.0 parser** diagnostics (`--features duckdb-parser`,
